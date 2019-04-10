@@ -19,6 +19,9 @@ libraryDependencies ++= Seq(
   "io.circe" %%	"circe-core" % "0.9.3",
   "io.circe" %% "circe-parser" % "0.9.3",
   "io.circe" %% "circe-optics" % "0.9.3",
+
+  "joda-time" % "joda-time" % "2.10.1",
+  "org.joda" % "joda-convert" % "2.2.0",
   
   "org.mongodb.scala" %% "mongo-scala-driver" % "2.1.0",
 )
