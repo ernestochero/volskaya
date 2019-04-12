@@ -4,22 +4,30 @@ import akka.http.scaladsl.model.DateTime
 import org.bson.types.ObjectId
 
 case class Order(id:ObjectId = new ObjectId(),
+                 orderTypeName: Option[_ <: OrderType],
+                 statusOrderType: List[_ <: StatusOrderType],
+                 cyclistCoordinate: Coordinate,
+                 kilometers:Double,
                  finalPrice:Option[Double],
                  isPaid: Option[Boolean],
                  paymentDateTime: Option[DateTime],
                  paymentMethod: Option[String]
                 )
-//TODO: ask about status order
-//TODO: make TypeStatusOrder an Enumeration
-case class StatusOrder(name: String,
-                       orderType: String,
-                       description: String,
-                       isCanceled:Option[Boolean],
-                       doAction:String)
+
+sealed trait CoordinateT {
+  def latitude:Double
+  def longitude: Double
+  def getCoordinate:(Double, Double)
+}
+
+case class Coordinate(latitude:Double, longitude:Double) extends CoordinateT {
+  override def getCoordinate: (Double, Double) = (latitude, longitude)
+}
 
 sealed trait OrderType {
-  val description:String
+  val description: String
 }
+
 case object DELIVERY extends OrderType {
   override val description: String = "week, months of the year"
 }
@@ -27,30 +35,56 @@ case object OPERATION extends OrderType {
   override val description: String = "but depending on your needs it can also be a good approach:"
 }
 
+case object OrderTypeList {
+  def getOrderTypeList: List[_ <: OrderType] = List(DELIVERY, OPERATION)
+}
+
 sealed trait StatusOrderType {
   val description: String
 }
 
-case object EMITIDO_CLIENTE extends StatusOrderType {
-  override val description: String = "Emitido por el cliente"
+case object CLIENT_GENERATED extends StatusOrderType {
+  override val description: String = "week, months of the year"
 }
 
-case object RECHAZADO_ADMINISTRADO extends StatusOrderType {
-  override val description: String =  "La order fue rechazada por el administrador "
+case object ADMINISTRATOR_DECLINED extends StatusOrderType {
+  override val description: String =  "week, months of the year"
 }
 
+case object ADMINISTRATOR_OFFERED extends StatusOrderType {
+  override val description: String = "week, months of the year"
+}
 
+case object CLIENT_ACCEPTED_OFFER extends StatusOrderType {
+  override val description: String = "week, months of the year"
+}
+
+case object CYCLIST_ACCEPTED_OFFER extends StatusOrderType {
+  override val description: String = "week, months of the year"
+}
+
+case object CLIENT_CANCELED extends StatusOrderType {
+  override val description: String = "week, months of the year"
+}
+
+case object CYCLIST_CANCELED extends StatusOrderType {
+  override val description: String = "week, months of the year"
+}
+
+case object ADMINISTRATOR_CANCELED extends StatusOrderType {
+  override val description: String = "week, months of the year"
+}
+
+case object FINISHED extends StatusOrderType {
+  override val description: String = "week, months of the year"
+}
+
+case object StatusOrderTypeList {
+  def getStatusOrderTypeList: List[_ <: StatusOrderType] = List(
+    CLIENT_GENERATED, ADMINISTRATOR_DECLINED, ADMINISTRATOR_OFFERED,
+    CLIENT_ACCEPTED_OFFER, CYCLIST_ACCEPTED_OFFER, CLIENT_CANCELED,
+    ADMINISTRATOR_CANCELED, FINISHED
+  )
+}
 
 // val orderTypes:List[_ <: OrderType] = DELIVERY :: OPERATION :: Nil
-
-
-/*
-* // a "heavier"
-package com.acme.app {
-    sealed trait Margin
-    case object TOP extends Margin
-    case object RIGHT extends Margin
-    case object BOTTOM extends Margin
-    case object LEFT extends Margin
-}
-* */

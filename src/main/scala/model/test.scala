@@ -15,8 +15,10 @@ object test extends App {
     val dt = DateTime.parse(inputTime,DateTimeFormat.forPattern(pattern))
     println(s"la xx ${dt.getMillis}")
 
-    val orderTypes:List[_ <: OrderType] = DELIVERY :: OPERATION :: Nil
+    val orderTypes:List[_ <: OrderType] = List(DELIVERY, OPERATION)
     val findOrderType = orderTypes.find( c => c.toString == "DELIVERY")
-    println(s"findOrderType ${ findOrderType.fold("Class not found"){_.description}  }")
+    println(s"findOrderType ${ findOrderType }")
+
+    val statusOrderType:List[_ <: StatusOrderType] = StatusOrderTypeList.getStatusOrderTypeList
   }
 }
