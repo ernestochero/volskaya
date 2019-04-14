@@ -11,7 +11,8 @@ case class Order(id:ObjectId = new ObjectId(),
                  finalPrice:Option[Double],
                  isPaid: Option[Boolean],
                  paymentDateTime: Option[DateTime],
-                 paymentMethod: Option[String]
+                 paymentMethod: Option[String],
+                 goals: Option[List[Goal]] = None
                 )
 
 sealed trait CoordinateT {

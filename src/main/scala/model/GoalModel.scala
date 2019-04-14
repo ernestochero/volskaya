@@ -1,12 +1,21 @@
 package model
 
+import org.joda.time.DateTime
+
 //TODO: put Order class here ...
-case class Goal(product: Product)
+case class Goal(product: Product,
+                cyclistId: Option[String],
+                goalCoordinate: Coordinate,
+                goalType: Option[_ <: GoalType],
+                goalCanceled: Option[GoalCanceled])
 
 case class Product(name:String,
                    description: String,
                    photo: Option[String],
                    isSpecial: Boolean)
+
+case class GoalCanceled(time: Option[DateTime],
+                        reason: Option[String])
 
 sealed trait GoalType {
   val description: String

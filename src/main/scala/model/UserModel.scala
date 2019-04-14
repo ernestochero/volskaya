@@ -8,7 +8,9 @@ case class User(id: ObjectId = new ObjectId(),
                 email: String,
                 role: String,
                 password: String,
-                isAuthenticated: Boolean = false)
+                isAuthenticated: Boolean = false,
+                orders: Option[List[Order]]
+               )
 
 case class Person(firstName: String, lastName:String)
 
