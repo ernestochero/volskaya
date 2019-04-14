@@ -1,4 +1,4 @@
-package model
+package models
 
 import akka.http.scaladsl.model.DateTime
 import org.bson.types.ObjectId
