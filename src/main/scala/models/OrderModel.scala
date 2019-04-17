@@ -2,16 +2,15 @@ package models
 
 import akka.http.scaladsl.model.DateTime
 import org.bson.types.ObjectId
-
+//TODO: change to DateTime on time in the future
 case class Order(orderTypeName: Option[String],
                  statusOrderTypeName: Option[String],
                  kilometers:Option[Double],
                  finalPrice: Option[Double],
                  isPaid: Option[Boolean],
-                 paymentDateTime: Option[DateTime],
+                 paymentDateTime: Option[String],
                  paymentMethod: Option[String],
-                 goals: Option[List[Goal]] = None
-                )
+                 goals: Option[List[Goal]] = None)
 
 sealed trait CoordinateT {
   def latitude:Double

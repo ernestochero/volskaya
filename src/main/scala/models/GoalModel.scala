@@ -2,7 +2,7 @@ package models
 
 import org.joda.time.DateTime
 
-case class Goal(product: List[Product],
+case class Goal(products: List[Product],
                 userCyclistId: Option[String],
                 goalCoordinate: Option[Coordinate],
                 goalTypeName: Option[String],
@@ -11,9 +11,10 @@ case class Goal(product: List[Product],
 case class Product(name:String,
                    description: String,
                    photo: Option[String],
-                   isSpecial: Boolean)
+                   isSpecial: Option[Boolean])
 
-case class GoalCanceled(time: Option[DateTime],
+//TODO: change to DateTime on time in the future
+case class GoalCanceled(time: Option[String],
                         reason: Option[String])
 
 sealed trait GoalType {
