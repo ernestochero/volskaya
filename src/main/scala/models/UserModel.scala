@@ -4,14 +4,14 @@ import org.bson.types.ObjectId
 
 case class User(id: ObjectId = new ObjectId(),
                 person: Person,
-                phoneNumber: PhoneNumber,
+                device: Device,
                 email: String,
                 role: String,
                 password: String,
-                isAuthenticated: Boolean = false,
+                isAuthenticated: Boolean,
                 orders: Option[List[Order]]
                )
 
 case class Person(firstName: String, lastName:String)
 
-case class PhoneNumber(name:String, number:String, imei:String)
+case class Device(name:String, number:String, imei:String, token: Option[String])

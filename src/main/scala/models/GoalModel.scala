@@ -3,7 +3,7 @@ package models
 import org.joda.time.DateTime
 
 //TODO: put Order class here ...
-case class Goal(product: Product,
+case class Goal(product: List[Product],
                 cyclistId: Option[String],
                 goalCoordinate: Coordinate,
                 goalType: Option[_ <: GoalType],
