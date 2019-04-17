@@ -1,3 +1,4 @@
+/*
 package fsmexample
 
 import akka.actor.{Actor, ActorRef, FSM}
@@ -107,4 +108,4 @@ class WireTransfer extends FSM[State, Data] {
 
   initialize()
 
-}
+}*/

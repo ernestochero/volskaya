@@ -2,11 +2,10 @@ package models
 
 import org.joda.time.DateTime
 
-//TODO: put Order class here ...
 case class Goal(product: List[Product],
-                cyclistId: Option[String],
-                goalCoordinate: Coordinate,
-                goalType: Option[_ <: GoalType],
+                userCyclistId: Option[String],
+                goalCoordinate: Option[Coordinate],
+                goalTypeName: Option[String],
                 goalCanceled: Option[GoalCanceled])
 
 case class Product(name:String,

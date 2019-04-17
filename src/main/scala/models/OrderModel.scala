@@ -3,12 +3,10 @@ package models
 import akka.http.scaladsl.model.DateTime
 import org.bson.types.ObjectId
 
-case class Order(id:ObjectId = new ObjectId(),
-                 orderTypeName: Option[_ <: OrderType],
-                 statusOrderType: List[_ <: StatusOrderType],
-                 cyclistCoordinate: Coordinate,
-                 kilometers:Double,
-                 finalPrice:Option[Double],
+case class Order(orderTypeName: Option[String],
+                 statusOrderTypeName: Option[String],
+                 kilometers:Option[Double],
+                 finalPrice: Option[Double],
                  isPaid: Option[Boolean],
                  paymentDateTime: Option[DateTime],
                  paymentMethod: Option[String],
