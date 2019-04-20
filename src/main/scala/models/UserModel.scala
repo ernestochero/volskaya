@@ -15,12 +15,25 @@ case class UserProducer(nameCompany:String, address: String, phone:String, ruc: 
 case class UserCyclist(firstName: String, lastName: String, dni: String) extends Person
 
 
-case class User(id: ObjectId = new ObjectId(),
+case class UserDomain(id: Option[String],
                 device: Device,
                 userCyclist: Option[UserCyclist],
                 userProducer: Option[UserProducer],
                 email: String,
                 password: String,
                 isAuthenticated: Boolean,
-                orders: Option[List[Order]])
+                orders: Option[List[Order]]) {
+  def asResource = User( id.fold(ObjectId.get()){new ObjectId(_)},
+    device, userCyclist, userProducer, email, password, isAuthenticated, orders)
+}
 
+case class User(_id: ObjectId = new ObjectId(),
+                        device: Device,
+                        userCyclist: Option[UserCyclist],
+                        userProducer: Option[UserProducer],
+                        email: String,
+                        password: String,
+                        isAuthenticated: Boolean,
+                        orders: Option[List[Order]]) {
+  def asDomain = UserDomain(Some(_id.toHexString),device, userCyclist, userProducer, email, password, isAuthenticated, orders)
+}

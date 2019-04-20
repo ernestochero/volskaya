@@ -2,7 +2,7 @@ package models
 
 import org.joda.time.DateTime
 
-case class Goal(products: List[Product],
+case class Goal(products: Option[List[Product]],
                 userCyclistId: Option[String],
                 goalCoordinate: Option[Coordinate],
                 goalTypeName: Option[String],

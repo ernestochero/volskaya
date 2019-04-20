@@ -1,7 +1,7 @@
 package repository
 
 import org.mongodb.scala._
-import models.User
+import models.{Device, Order, User, UserCyclist, UserDomain, UserProducer}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -12,6 +12,18 @@ class UserRepository(collection: MongoCollection[User])(implicit ec:ExecutionCon
       .insertOne(user)
       .head()
       .map { _ => user}
+  }
+
+  def getAllUsers: Future[Seq[User]] = { collection.find().toFuture() }
+
+}
+
+class UserRepo(repository: UserRepository)(implicit ec: ExecutionContext) {
+
+  def allProducts = repository.getAllUsers.map( user => user.map(_.asDomain ))
+
+  def saveUser(userDomain: UserDomain) = {
+    repository.saveUser(userDomain.asResource).map(_.asDomain)
   }
 
 }
