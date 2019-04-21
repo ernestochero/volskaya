@@ -1,7 +1,7 @@
 package repository
 
 import org.mongodb.scala._
-import models.{Device, Order, User, UserCyclist, UserDomain, UserProducer}
+import models.{ User, UserDomain }
 
 import scala.concurrent.{ExecutionContext, Future}
 
