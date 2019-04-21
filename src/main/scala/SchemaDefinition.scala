@@ -139,6 +139,7 @@ object SchemaDefinition {
 
 
   implicit val UserCyclistType = ObjectType("UserCyclist", "userCyclist description",
+    interfaces[Unit, UserCyclist](PersonType),
     fields[Unit, UserCyclist](
       Field("firstName", StringType, resolve = _.value.firstName ),
       Field("lastName", StringType, resolve = _.value.lastName),
@@ -153,7 +154,7 @@ object SchemaDefinition {
     InputField("dni", StringType)
   ))
 
-  implicit val Person = InterfaceType("Person", "person description",
+  implicit val PersonType: InterfaceType[Unit, Person] = InterfaceType("Person", "person description",
     () => fields[Unit, Person](
       Field("firstName", StringType, resolve = _.value.firstName),
       Field("lastName", StringType, resolve = _.value.lastName),
