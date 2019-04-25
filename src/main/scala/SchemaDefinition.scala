@@ -139,7 +139,6 @@ object SchemaDefinition {
 
 
   implicit val UserCyclistType = ObjectType("UserCyclist", "userCyclist description",
-    interfaces[Unit, UserCyclist](PersonType),
     fields[Unit, UserCyclist](
       Field("firstName", StringType, resolve = _.value.firstName ),
       Field("lastName", StringType, resolve = _.value.lastName),
@@ -185,12 +184,12 @@ object SchemaDefinition {
   val QueryType = ObjectType("Query", fields[UserRepo, Unit](
     Field("allUsers", ListType(UserType),
       description = Some("Returns a list of all available users."),
-      resolve = _.ctx.allProducts
+      resolve = _.ctx.allUsers
     )
    )
   )
 
-  val MutationType = ObjectType("Mutation", fields[UserRepo, Unit](
+/*  val MutationType = ObjectType("Mutation", fields[UserRepo, Unit](
     Field("addUser", UserType,
       arguments =
         List(
@@ -219,7 +218,7 @@ object SchemaDefinition {
       }
     )
    )
-  )
+  )*/
 
-  val UserSchema = Schema(QueryType, Some(MutationType))
+  val UserSchema = Schema(QueryType)
 }
