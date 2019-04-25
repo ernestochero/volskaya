@@ -20,7 +20,7 @@ class UserRepository(collection: MongoCollection[User])(implicit ec:ExecutionCon
 
 class UserRepo(repository: UserRepository)(implicit ec: ExecutionContext) {
 
-  def allProducts = repository.getAllUsers.map( user => user.map(_.asDomain ))
+  def allUsers = repository.getAllUsers.map( user => user.map(_.asDomain ))
 
   def saveUser(userDomain: UserDomain) = {
     repository.saveUser(userDomain.asResource).map(_.asDomain)
