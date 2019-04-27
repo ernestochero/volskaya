@@ -16,7 +16,7 @@ case class UserCyclist(firstName: String, lastName: String, dni: String) extends
 
 
 case class UserDomain(id: Option[String],
-                device: Device,
+                device: Option[Device],
                 userCyclist: Option[UserCyclist],
                 userProducer: Option[UserProducer],
                 email: String,
@@ -28,7 +28,7 @@ case class UserDomain(id: Option[String],
 }
 
 case class User(_id: ObjectId = new ObjectId(),
-                        device: Device,
+                        device: Option[Device],
                         userCyclist: Option[UserCyclist],
                         userProducer: Option[UserProducer],
                         email: String,

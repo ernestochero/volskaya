@@ -3,7 +3,7 @@ import play.api.libs.json.Json
 import repository.UserRepo
 import sangria.schema._
 import sangria.marshalling.playJson._
-
+import sangria.macros.derive.{InputObjectTypeName, deriveInputObjectType, deriveObjectType}
 object SchemaDefinition {
 
   implicit val ProductType = ObjectType("Product", "product description",
@@ -16,7 +16,7 @@ object SchemaDefinition {
 
   implicit val productFormat = Json.format[Product]
 
-  implicit val ProductInputType = InputObjectType[Product]("product", List(
+  implicit val ProductInputType = InputObjectType[Product]("ProductFieldsInput", List(
     InputField("name", StringType),
     InputField("description", StringType),
     InputField("photo", StringType),
@@ -31,7 +31,7 @@ object SchemaDefinition {
 
   implicit val coordinateFormat = Json.format[Coordinate]
 
-  implicit val CoordinateInputType = InputObjectType[Coordinate]("Coordinate", List(
+  implicit val CoordinateInputType = InputObjectType[Coordinate]("CoordinateFieldsInput", List(
     InputField("latitude", FloatType),
     InputField("longitude", FloatType)
   ))
@@ -44,7 +44,7 @@ object SchemaDefinition {
 
   implicit val goalCanceledFormat = Json.format[GoalCanceled]
 
-  implicit val GoalCanceledInputType = InputObjectType[GoalCanceled]("Goal Canceled", List(
+  implicit val GoalCanceledInputType = InputObjectType[GoalCanceled]("GoalCanceledFieldsInput", List(
     InputField("time", OptionInputType(StringType)),
     InputField("reason", OptionInputType(StringType))
   ))
@@ -60,7 +60,7 @@ object SchemaDefinition {
 
   implicit val goalFormat = Json.format[Goal]
 
-  implicit val GoalInputType = InputObjectType[Goal]("Goal", List(
+  implicit val GoalInputType = InputObjectType[Goal]("GoalFieldsInput", List(
     InputField("products", OptionInputType(ListInputType(ProductInputType))),
     InputField("userCyclistId", OptionInputType(StringType)),
     InputField("goalTypeName", OptionInputType(CoordinateInputType)),
@@ -82,7 +82,7 @@ object SchemaDefinition {
 
   implicit val orderFormat = Json.format[Order]
 
-  implicit val OrderInputType = InputObjectType[Order]("Order", List(
+  implicit val OrderInputType = InputObjectType[Order]("OrderFieldsInput", List(
     InputField("orderTypeName", OptionInputType(StringType)),
     InputField("statusOrderTypeName", OptionInputType(StringType)),
     InputField("kilometers", OptionInputType(FloatType)),
@@ -106,9 +106,14 @@ object SchemaDefinition {
       Field("token", OptionType(StringType), resolve = _.value.token)
     ))
 
+  /*implicit val DeviceType = deriveObjectType[Unit, Device]()*/
+
   implicit val deviceFormat  = Json.format[Device]
 
-  implicit val DeviceInputType = InputObjectType[Device]("Device", List(
+/*  implicit val DeviceInputType = deriveInputObjectType[Device](
+    InputObjectTypeName("DeviceFieldsInput"))*/
+
+  implicit val DeviceInputType = InputObjectType[Device]("DeviceFieldsInput", List(
     InputField("name", StringType),
     InputField("number", StringType),
     InputField("imei", StringType),
@@ -130,7 +135,7 @@ object SchemaDefinition {
 
   implicit val userProducerFormat = Json.format[UserProducer]
 
-  implicit val UserProducerInputType = InputObjectType[UserProducer]("UserProducer", List(
+  implicit val UserProducerInputType = InputObjectType[UserProducer]("UserProducerFieldsInput", List(
     InputField("nameCompany", StringType),
     InputField("address", StringType),
     InputField("phone", StringType),
@@ -147,7 +152,7 @@ object SchemaDefinition {
 
   implicit val userCyclistFormat  = Json.format[UserCyclist]
 
-  implicit val UserCyclistInputType = InputObjectType[UserCyclist]("UserCyclist", List(
+  implicit val UserCyclistInputType = InputObjectType[UserCyclist]("UserCyclistFieldsInput", List(
     InputField("firstName", StringType),
     InputField("lastName", StringType),
     InputField("dni", StringType)
@@ -163,7 +168,7 @@ object SchemaDefinition {
   implicit val UserType = ObjectType("User", "user description",
     fields[Unit, UserDomain](
       Field("id", OptionType(StringType), resolve = _.value.id),
-      Field("device", DeviceType, resolve = _.value.device),
+      Field("device", OptionType(DeviceType), resolve = _.value.device),
       Field("userCyclist", OptionType(UserCyclistType), resolve = _.value.userCyclist),
       Field("userProducer", OptionType(UserProducerType), resolve = _.value.userProducer),
       Field("email", StringType, resolve = _.value.email),
@@ -173,11 +178,11 @@ object SchemaDefinition {
     ))
 
   val IdArg = Argument("id", OptionInputType(StringType))
-  val DeviceArg = Argument("device", DeviceInputType)
+  val DeviceArg = Argument("device", OptionInputType(DeviceInputType))
   val UserCyclistArg = Argument("userCyclist", OptionInputType(UserCyclistInputType))
   val UserProducerArg = Argument("userProducer", OptionInputType(UserProducerInputType))
   val EmailArg = Argument("email", StringType)
-  val PasswordArg = Argument("email", StringType)
+  val PasswordArg = Argument("password", StringType)
   val IsAuthenticatedArg = Argument("isAuthenticated", BooleanType)
   val OrdersArg = Argument("orders", OptionInputType(ListInputType(OrderInputType)))
 
@@ -189,7 +194,7 @@ object SchemaDefinition {
    )
   )
 
-/*  val MutationType = ObjectType("Mutation", fields[UserRepo, Unit](
+  val MutationType = ObjectType("Mutation", fields[UserRepo, Unit](
     Field("addUser", UserType,
       arguments =
         List(
@@ -218,7 +223,7 @@ object SchemaDefinition {
       }
     )
    )
-  )*/
+  )
 
-  val UserSchema = Schema(QueryType)
+  val UserSchema = Schema(QueryType, Some(MutationType))
 }
