@@ -3,7 +3,7 @@ import play.api.libs.json.Json
 import repository.UserRepo
 import sangria.schema._
 import sangria.marshalling.playJson._
-import sangria.macros.derive.{InputObjectTypeName, deriveInputObjectType, deriveObjectType}
+
 object SchemaDefinition {
 
   implicit val ProductType = ObjectType("Product", "product description",
@@ -171,9 +171,9 @@ object SchemaDefinition {
       Field("device", OptionType(DeviceType), resolve = _.value.device),
       Field("userCyclist", OptionType(UserCyclistType), resolve = _.value.userCyclist),
       Field("userProducer", OptionType(UserProducerType), resolve = _.value.userProducer),
-      Field("email", StringType, resolve = _.value.email),
-      Field("password", StringType, resolve = _.value.password),
-      Field("isAuthenticated", BooleanType, resolve = _.value.isAuthenticated),
+      Field("email", OptionType(StringType), resolve = _.value.email),
+      Field("password", OptionType(StringType), resolve = _.value.password),
+      Field("isAuthenticated", OptionType(BooleanType), resolve = _.value.isAuthenticated),
       Field("orders", OptionType(ListType(OrderType)), resolve = _.value.orders)
     ))
 
@@ -181,9 +181,9 @@ object SchemaDefinition {
   val DeviceArg = Argument("device", OptionInputType(DeviceInputType))
   val UserCyclistArg = Argument("userCyclist", OptionInputType(UserCyclistInputType))
   val UserProducerArg = Argument("userProducer", OptionInputType(UserProducerInputType))
-  val EmailArg = Argument("email", StringType)
-  val PasswordArg = Argument("password", StringType)
-  val IsAuthenticatedArg = Argument("isAuthenticated", BooleanType)
+  val EmailArg = Argument("email", OptionInputType(StringType))
+  val PasswordArg = Argument("password", OptionInputType(StringType))
+  val IsAuthenticatedArg = Argument("isAuthenticated", OptionInputType(BooleanType))
   val OrdersArg = Argument("orders", OptionInputType(ListInputType(OrderInputType)))
 
   val QueryType = ObjectType("Query", fields[UserRepo, Unit](
@@ -194,32 +194,51 @@ object SchemaDefinition {
    )
   )
 
+  val arguments = List(
+    IdArg,
+    DeviceArg,
+    UserCyclistArg,
+    UserProducerArg,
+    EmailArg,
+    PasswordArg,
+    IsAuthenticatedArg,
+    OrdersArg
+  )
+
+  def buildUserDomain(context:Context[UserRepo, Unit]): UserDomain = {
+    UserDomain(
+      context.arg(IdArg),
+      context.arg(DeviceArg),
+      context.arg(UserCyclistArg),
+      context.arg(UserProducerArg),
+      context.arg(EmailArg),
+      context.arg(PasswordArg),
+      context.arg(IsAuthenticatedArg),
+      context.arg(OrdersArg).map(_.toList)
+    )
+  }
+
+
   val MutationType = ObjectType("Mutation", fields[UserRepo, Unit](
     Field("addUser", UserType,
-      arguments =
-        List(
-          IdArg,
-          DeviceArg,
-          UserCyclistArg,
-          UserProducerArg,
-          EmailArg,
-          PasswordArg,
-          IsAuthenticatedArg,
-          OrdersArg
-      ),
+      arguments = arguments,
       resolve = context => {
         val repo = context.ctx
-        val user = UserDomain(
-          context.arg(IdArg),
-          context.arg(DeviceArg),
-          context.arg(UserCyclistArg),
-          context.arg(UserProducerArg),
-          context.arg(EmailArg),
-          context.arg(PasswordArg),
-          context.arg(IsAuthenticatedArg),
-          context.arg(OrdersArg).map(_.toList)
-        )
-        repo.saveUser(user)
+        repo.saveUser(buildUserDomain(context))
+      }
+    ),
+    Field("updateEmail",StringType,
+      arguments = arguments,
+      resolve = context => {
+        val repo = context.ctx
+        repo.updateEmail(buildUserDomain(context))
+      }
+    ),
+    Field("updateUserType", StringType,
+      arguments = arguments,
+      resolve = context => {
+        val repo = context.ctx
+        repo.updateUserType(buildUserDomain(context))
       }
     )
    )
