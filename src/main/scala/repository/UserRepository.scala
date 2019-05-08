@@ -23,6 +23,12 @@ class UserRepository(collection: MongoCollection[User])(implicit ec:ExecutionCon
     collection.findOneAndUpdate(filter, update).head()
   }
 
+  def updatePassword(_id: ObjectId, password:String): Future[User] = {
+    val filter = Document("_id" -> _id)
+    val update = Document("$set" ->  Document("password" -> password))
+    collection.findOneAndUpdate(filter, update).head()
+  }
+
   def updateUserCyclist(_id: ObjectId, userCyclist: UserCyclist): Future[User] = {
     val filter = Document("_id" -> _id)
     val fields = Document(
@@ -61,7 +67,7 @@ class UserRepo(repository: UserRepository)(implicit ec: ExecutionContext) {
     (userDomain.id, userDomain.email) match {
       case (Some(id), Some(email)) =>
         repository.updateEmail(new ObjectId(id), email).flatMap{
-          case user: User => Future.successful(s"Updated Correctly : ${user._id.toHexString}")
+          case user: User => Future.successful(s"Email Updated Correctly : ${user._id.toHexString}")
           case _ => Future.successful(s"Failed to updated the email")
         }
       case (_, _) =>
@@ -72,12 +78,12 @@ class UserRepo(repository: UserRepository)(implicit ec: ExecutionContext) {
   def updateUserType(userDomain: UserDomain) = {
     (userDomain.id, userDomain.userProducer, userDomain.userCyclist) match {
       case (Some(id),Some(userProducer), None) =>
-        repository.updateUserProducer(new ObjectId(id), userProducer).flatMap{
+        repository.updateUserProducer(new ObjectId(id), userProducer).flatMap {
           case user: User => Future.successful(s"Updated Correctly : ${user._id.toHexString}")
           case _ => Future.successful(s"Failed to updated the userProducer")
         }
       case (Some(id), None, Some(userCyclist)) =>
-        repository.updateUserCyclist(new ObjectId(id), userCyclist).flatMap{
+        repository.updateUserCyclist(new ObjectId(id), userCyclist).flatMap {
           case user: User => Future.successful(s"Updated Correctly : ${user._id.toHexString}")
           case _ => Future.successful(s"Failed to updated the userCyclist")
         }
@@ -85,5 +91,16 @@ class UserRepo(repository: UserRepository)(implicit ec: ExecutionContext) {
     }
   }
 
+  def updatePassword(userDomain: UserDomain) = {
+    (userDomain.id, userDomain.password) match {
+      case (Some(id), Some(password)) =>
+        repository.updatePassword(new ObjectId(id), password).flatMap {
+          case user: User => Future.successful(s"Password Updated Correctly : ${user._id.toHexString}")
+          case _ => Future.successful(s"Failed to updated the Password")
+        }
+      case (_, _) =>
+        Future.successful("Failed : Incorrect Parameters")
+    }
+  }
 
 }

@@ -112,6 +112,13 @@ object SchemaDefinition {
         repo.updateEmail(buildUserDomain(context))
       }
     ),
+    Field("updatePassword",StringType,
+      arguments = arguments,
+      resolve = context => {
+        val repo = context.ctx
+        repo.updatePassword(buildUserDomain(context))
+      }
+    ),
     Field("updateUserType", StringType,
       arguments = arguments,
       resolve = context => {
