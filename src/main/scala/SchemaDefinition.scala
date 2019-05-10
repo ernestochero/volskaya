@@ -34,11 +34,11 @@ object SchemaDefinition {
 
   implicit val UserProducerType = deriveObjectType[Unit, UserProducer]()
   implicit val userProducerFormat = Json.format[UserProducer]
-  implicit val UserProducerInputType = deriveInputObjectType[UserProducer](InputObjectTypeName("DeviceFieldsInput"))
+  implicit val UserProducerInputType = deriveInputObjectType[UserProducer](InputObjectTypeName("UserProducerFieldsInput"))
 
   implicit val UserCyclistType = deriveObjectType[Unit, UserCyclist]()
   implicit val userCyclistFormat  = Json.format[UserCyclist]
-  implicit val UserCyclistInputType = deriveInputObjectType[UserCyclist](InputObjectTypeName("DeviceFieldsInput"))
+  implicit val UserCyclistInputType = deriveInputObjectType[UserCyclist](InputObjectTypeName("UserCyclistFieldsInput"))
 
   implicit val UserType = deriveObjectType[Unit, UserDomain]()
   implicit val userFormat = Json.format[UserDomain]
