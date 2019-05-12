@@ -2,9 +2,10 @@ package repository
 
 import org.mongodb.scala._
 import models.{User, UserCyclist, UserDomain, UserProducer}
-import org.mongodb.scala.bson.{BsonString, ObjectId}
+import org.mongodb.scala.bson.{ObjectId}
 
 import scala.concurrent.{ExecutionContext, Future}
+import models.VolskayaMessages._
 
 class UserRepository(collection: MongoCollection[User])(implicit ec:ExecutionContext) {
 
@@ -63,43 +64,44 @@ class UserRepo(repository: UserRepository)(implicit ec: ExecutionContext) {
 
   //TODO:  here I call other functions to operate the database
 
-  def updateEmail(userDomain: UserDomain) = {
+  def updateEmail(userDomain: UserDomain): Future[VolskayaResponse] = {
     (userDomain.id, userDomain.email) match {
       case (Some(id), Some(email)) =>
-        repository.updateEmail(new ObjectId(id), email).flatMap{
-          case user: User => Future.successful(s"Email Updated Correctly : ${user._id.toHexString}")
-          case _ => Future.successful(s"Failed to updated the email")
+        repository.updateEmail(new ObjectId(id), email).flatMap {
+          case user: User => Future.successful(VolskayaSuccessfulResponse(fieldId = models.EmailField))
+          case _ => Future.successful(VolskayaFailedResponse(fieldId = models.EmailField))
         }
       case (_, _) =>
-        Future.successful("Failed : Incorrect Parameters")
+        Future.successful(VolskayaIncorrectParameters())
     }
   }
 
-  def updateUserType(userDomain: UserDomain) = {
+  def updateUserType(userDomain: UserDomain):Future[VolskayaResponse] = {
     (userDomain.id, userDomain.userProducer, userDomain.userCyclist) match {
       case (Some(id),Some(userProducer), None) =>
         repository.updateUserProducer(new ObjectId(id), userProducer).flatMap {
-          case user: User => Future.successful(s"Updated Correctly : ${user._id.toHexString}")
-          case _ => Future.successful(s"Failed to updated the userProducer")
+          case user: User => Future.successful(VolskayaSuccessfulResponse(fieldId = models.UserProducerField))
+          case _ => Future.successful(VolskayaFailedResponse(fieldId = models.UserProducerField))
         }
       case (Some(id), None, Some(userCyclist)) =>
         repository.updateUserCyclist(new ObjectId(id), userCyclist).flatMap {
-          case user: User => Future.successful(s"Updated Correctly : ${user._id.toHexString}")
-          case _ => Future.successful(s"Failed to updated the userCyclist")
+          case user: User => Future.successful(VolskayaSuccessfulResponse(fieldId = models.UserCyclistField))
+          case _ => Future.successful(VolskayaFailedResponse(fieldId = models.UserCyclistField))
         }
-      case (_, _, _) => Future.successful("Failed : Incorrect Parameters")
+      case (_, _, _) =>
+        Future.successful(VolskayaIncorrectParameters())
     }
   }
 
-  def updatePassword(userDomain: UserDomain) = {
+  def updatePassword(userDomain: UserDomain):Future[VolskayaResponse] = {
     (userDomain.id, userDomain.password) match {
       case (Some(id), Some(password)) =>
         repository.updatePassword(new ObjectId(id), password).flatMap {
-          case user: User => Future.successful(s"Password Updated Correctly : ${user._id.toHexString}")
-          case _ => Future.successful(s"Failed to updated the Password")
+          case user: User => Future.successful(VolskayaSuccessfulResponse(fieldId = models.PasswordField))
+          case _ => Future.successful(VolskayaFailedResponse(fieldId = models.PasswordField))
         }
       case (_, _) =>
-        Future.successful("Failed : Incorrect Parameters")
+        Future.successful(VolskayaIncorrectParameters())
     }
   }
 

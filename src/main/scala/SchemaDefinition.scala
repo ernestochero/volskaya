@@ -1,3 +1,4 @@
+import models.VolskayaMessages.{VolskayaMessage, VolskayaResponse}
 import models._
 import play.api.libs.json.Json
 import repository.UserRepo
@@ -53,6 +54,17 @@ object SchemaDefinition {
 
   /* custom types*/
 
+  implicit val VolskayaMessageInterfaceType = InterfaceType("sd","dd",
+    () => fields[Unit, VolskayaMessage](
+      Field("message", StringType, resolve =  _.value.message)
+    ))
+
+  implicit val VolskayaMessageResponseType = ObjectType("volskayaMessageOutputType","Format to return some request",
+    interfaces[Unit, VolskayaResponse](VolskayaMessageInterfaceType),
+    fields[Unit, VolskayaResponse](
+      Field("responseCode", StringType, resolve = _.value.responseCode),
+      Field("responseMessage", StringType, resolve = _.value.responseMessage)
+    ))
 
   /* Arguments*/
   val IdArg = Argument("id", OptionInputType(StringType))
@@ -105,21 +117,21 @@ object SchemaDefinition {
         repo.saveUser(buildUserDomain(context))
       }
     ),
-    Field("updateEmail",StringType,
+    Field("updateEmail",VolskayaMessageResponseType,
       arguments = arguments,
       resolve = context => {
         val repo = context.ctx
         repo.updateEmail(buildUserDomain(context))
       }
     ),
-    Field("updatePassword",StringType,
+    Field("updatePassword",VolskayaMessageResponseType,
       arguments = arguments,
       resolve = context => {
         val repo = context.ctx
         repo.updatePassword(buildUserDomain(context))
       }
     ),
-    Field("updateUserType", StringType,
+    Field("updateUserType", VolskayaMessageResponseType,
       arguments = arguments,
       resolve = context => {
         val repo = context.ctx
