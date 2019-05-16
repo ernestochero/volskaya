@@ -15,6 +15,7 @@ libraryDependencies ++= Seq(
   "org.sangria-graphql" %% "sangria-play-json" % "1.0.5",
 
   "com.typesafe.akka" %% "akka-http" % "10.1.3",
+  "com.typesafe.akka" %% "akka-http-spray-json" % "10.1.3",
   "de.heikoseeberger" %% "akka-http-circe" % "1.21.0",
 
   "io.circe" %%	"circe-core" % "0.9.3",
