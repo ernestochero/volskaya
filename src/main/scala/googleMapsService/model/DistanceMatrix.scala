@@ -8,4 +8,4 @@ final case class DistanceMatrixElement(distance: Distance , duration: Duration)
 
 final case class DistanceMatrixRow( elements: List[DistanceMatrixElement] )
 
-final case class DistanceMatrix( destinationAddresses:List[String], originAddresses: List[String], rows: List[DistanceMatrixRow], status:String )
+final case class DistanceMatrix( `destination_addresses`:List[String], `origin_addresses`: List[String], rows: List[DistanceMatrixRow], status:String )
