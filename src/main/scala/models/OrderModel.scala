@@ -22,6 +22,8 @@ case class Coordinate(latitude:Double, longitude:Double) extends CoordinateT {
   override def getCoordinate: (Double, Double) = (latitude, longitude)
 }
 
+case class Route(coordinateA: Coordinate, coordinateB: Coordinate)
+
 sealed trait OrderType {
   val description: String
 }

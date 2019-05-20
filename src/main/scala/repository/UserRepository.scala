@@ -1,8 +1,8 @@
 package repository
 
 import org.mongodb.scala._
-import models.{User, UserCyclist, UserDomain, UserProducer}
-import org.mongodb.scala.bson.{ObjectId}
+import models.{Coordinate, Route, User, UserCyclist, UserDomain, UserProducer}
+import org.mongodb.scala.bson.ObjectId
 
 import scala.concurrent.{ExecutionContext, Future}
 import models.VolskayaMessages._
@@ -103,6 +103,13 @@ class UserRepo(repository: UserRepository)(implicit ec: ExecutionContext) {
       case (_, _) =>
         Future.successful(VolskayaIncorrectParameters())
     }
+  }
+
+  def calculatePriceRoute(route: Route): Future[Double] = {
+    val coordinateA = route.coordinateA
+    val coordinateB = route.coordinateB
+    println(s"CA : ${coordinateA.getCoordinate} and  CB: ${coordinateB.getCoordinate}")
+    Future.successful(12.0)
   }
 
 }

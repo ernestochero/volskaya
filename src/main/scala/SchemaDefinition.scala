@@ -45,6 +45,10 @@ object SchemaDefinition {
   implicit val userFormat = Json.format[UserDomain]
   implicit val UserInputType = deriveInputObjectType[UserDomain](InputObjectTypeName("UserFieldsInput"))
 
+  implicit val RouteType = deriveObjectType[Unit, Route]()
+  implicit val routeFormat = Json.format[Route]
+  implicit val RouteInputType = deriveInputObjectType[Route](InputObjectTypeName("RouteFieldsInput"))
+
   implicit val PersonType: InterfaceType[Unit, Person] = InterfaceType("Person", "person description",
     () => fields[Unit, Person](
       Field("firstName", StringType, resolve = _.value.firstName),
@@ -54,7 +58,7 @@ object SchemaDefinition {
 
   /* custom types*/
 
-  implicit val VolskayaMessageInterfaceType = InterfaceType("sd","dd",
+  implicit val VolskayaMessageInterfaceType = InterfaceType("volskayaMessageInterface","volskaya Message Interface Description",
     () => fields[Unit, VolskayaMessage](
       Field("message", StringType, resolve =  _.value.message)
     ))
@@ -75,14 +79,7 @@ object SchemaDefinition {
   val PasswordArg = Argument("password", OptionInputType(StringType))
   val IsAuthenticatedArg = Argument("isAuthenticated", OptionInputType(BooleanType))
   val OrdersArg = Argument("orders", OptionInputType(ListInputType(OrderInputType)))
-
-  val QueryType = ObjectType("Query", fields[UserRepo, Unit](
-    Field("allUsers", ListType(UserType),
-      description = Some("Returns a list of all available users."),
-      resolve = _.ctx.allUsers
-    )
-   )
-  )
+  val RouteArg = Argument("route", RouteInputType)
 
   val arguments = List(
     IdArg,
@@ -108,6 +105,20 @@ object SchemaDefinition {
     )
   }
 
+  val QueryType = ObjectType("Query", fields[UserRepo, Unit](
+    Field("allUsers", ListType(UserType),
+      description = Some("Returns a list of all available users."),
+      resolve = _.ctx.allUsers
+    ),
+    Field("getPrice",FloatType,
+      description = Some("Return a price of one Route"),
+      arguments = RouteArg :: Nil,
+      resolve = context => {
+        context.ctx.calculatePriceRoute(context.arg(RouteArg))
+      }
+    )
+  )
+  )
 
   val MutationType = ObjectType("Mutation", fields[UserRepo, Unit](
     Field("addUser", UserType,
