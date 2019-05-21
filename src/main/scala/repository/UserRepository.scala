@@ -1,8 +1,10 @@
 package repository
 
+import googleMapsService.{Context, DistanceMatrixApi}
 import org.mongodb.scala._
 import models.{Coordinate, Route, User, UserCyclist, UserDomain, UserProducer}
 import org.mongodb.scala.bson.ObjectId
+import googleMapsService.model.{Distance, DistanceMatrix, Units}
 
 import scala.concurrent.{ExecutionContext, Future}
 import models.VolskayaMessages._
@@ -17,6 +19,11 @@ class UserRepository(collection: MongoCollection[User])(implicit ec:ExecutionCon
   }
 
   def getAllUsers: Future[Seq[User]] = { collection.find().toFuture() }
+
+  def verifyLogin(email:String, password:String): Future[Boolean] = {
+    val filter = Document("email" -> email)
+    collection.find(filter).first().head().map{ _.password.fold(false){ _ == password}}
+  }
 
   def updateEmail(_id: ObjectId, email:String): Future[User] = {
     val filter = Document("_id" -> _id)
@@ -55,6 +62,8 @@ class UserRepository(collection: MongoCollection[User])(implicit ec:ExecutionCon
 }
 
 class UserRepo(repository: UserRepository)(implicit ec: ExecutionContext) {
+  // TODO this context should be move to another place
+  val context = Context(apiKey = "AIzaSyCXK3faSiD-RBShPD2TK1z1pRRpRaBdYtg")
 
   def allUsers = repository.getAllUsers.map( user => user.map(_.asDomain ))
 
@@ -63,7 +72,6 @@ class UserRepo(repository: UserRepository)(implicit ec: ExecutionContext) {
   }
 
   //TODO:  here I call other functions to operate the database
-
   def updateEmail(userDomain: UserDomain): Future[VolskayaResponse] = {
     (userDomain.id, userDomain.email) match {
       case (Some(id), Some(email)) =>
@@ -105,11 +113,49 @@ class UserRepo(repository: UserRepository)(implicit ec: ExecutionContext) {
     }
   }
 
-  def calculatePriceRoute(route: Route): Future[Double] = {
-    val coordinateA = route.coordinateA
-    val coordinateB = route.coordinateB
-    println(s"CA : ${coordinateA.getCoordinate} and  CB: ${coordinateB.getCoordinate}")
-    Future.successful(12.0)
+  // TODO : implement the calculate of price with googleMaps API
+  def calculatePriceRoute(route: Route): Future[List[Int]] = {
+    val origins = route.coordinateA.toString :: Nil
+    val destinations = route.coordinateB.toString :: Nil
+
+    //TODO optimize this function when we have a geoZone
+    def calculateByDistance(distanceMeters:Int): Int = distanceMeters match {
+      case v if v > 0 && v < 2800 => 4
+      case v if v > 2900 && v < 3800 => 5
+      case v if v > 3900 && v < 4800 => 6
+      case v if v > 4900 && v < 5800 => 7
+      case v if v > 5900 && v < 6800 => 8
+      case v if v > 6900 && v < 7800 => 9
+      case _ => 10
+    }
+
+    val distanceMatrix = DistanceMatrixApi.getDistanceMatrix(origins, destinations, units = Some(Units.metric))(context)
+
+    distanceMatrix.foreach(println(_))
+
+    distanceMatrix.flatMap {
+      case dm:DistanceMatrix if dm.status == "OK" =>
+        val price = for {
+          row <- dm.rows
+          element <- row.elements
+        } yield {
+          calculateByDistance(element.distance.value)
+        }
+        Future.successful(price)
+      case _ => Future.failed(new Exception("error to calculate the price of route"))
+    }
   }
+
+  def login(maybeEmail:Option[String], maybePassword:Option[String]): Future[VolskayaResponse] = {
+    (maybeEmail, maybePassword) match {
+      case (Some(email), Some(password)) =>
+        repository.verifyLogin(email, password).flatMap {
+          case true => Future.successful(VolskayaSuccessfulLogin())
+          case false =>  Future.successful(VolskayaFailedLogin())
+        }
+      case (_ , _ ) => Future.successful(VolskayaIncorrectParameters())
+    }
+  }
+
 
 }

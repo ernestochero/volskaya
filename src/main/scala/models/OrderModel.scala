@@ -16,6 +16,7 @@ sealed trait CoordinateT {
   def latitude:Double
   def longitude: Double
   def getCoordinate:(Double, Double)
+  override def toString: String = s"$latitude, $longitude"
 }
 
 case class Coordinate(latitude:Double, longitude:Double) extends CoordinateT {

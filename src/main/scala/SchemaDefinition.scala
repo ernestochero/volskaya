@@ -110,11 +110,17 @@ object SchemaDefinition {
       description = Some("Returns a list of all available users."),
       resolve = _.ctx.allUsers
     ),
-    Field("getPrice",FloatType,
+    Field("calculatePriceRoute",ListType(IntType),
       description = Some("Return a price of one Route"),
       arguments = RouteArg :: Nil,
       resolve = context => {
         context.ctx.calculatePriceRoute(context.arg(RouteArg))
+      }
+    ),
+    Field("login",VolskayaMessageResponseType,
+      arguments = EmailArg :: PasswordArg :: Nil,
+      resolve = context => {
+        context.ctx.login(context.arg(EmailArg), context.arg(PasswordArg))
       }
     )
   )

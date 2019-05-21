@@ -8,7 +8,7 @@ case object PasswordField extends FieldId("password")
 case object EmailField extends FieldId("email")
 case object UserProducerField extends FieldId("userProducer")
 case object UserCyclistField extends FieldId("userCyclist")
-
+case object DefaultFieldId extends FieldId("")
 
 object VolskayaMessages {
 
@@ -28,8 +28,16 @@ object VolskayaMessages {
     override val responseMessage = s"The ${fieldId.name} was updated successfully"
   }
 
-  case class VolskayaFailedResponse(responseCode: String = "05", fieldId: FieldId) extends VolskayaResponse {
+  case class VolskayaFailedResponse(responseCode: String = "01", fieldId: FieldId) extends VolskayaResponse {
     override val responseMessage = s"Failed to update the ${fieldId.name}"
+  }
+
+  case class VolskayaSuccessfulLogin(responseCode: String = "20") extends VolskayaResponse {
+    override val responseMessage: String = s"The user Logged successfully"
+  }
+
+  case class VolskayaFailedLogin(responseCode: String = "21") extends VolskayaResponse {
+    override val responseMessage: String = s"Failed to Login"
   }
 
 }
