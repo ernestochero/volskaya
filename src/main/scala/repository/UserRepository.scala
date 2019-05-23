@@ -78,6 +78,9 @@ class UserRepo(repository: UserRepository)(implicit ec: ExecutionContext) {
         repository.updateEmail(new ObjectId(id), email).flatMap {
           case user: User => Future.successful(VolskayaSuccessfulResponse(fieldId = models.EmailField))
           case _ => Future.successful(VolskayaFailedResponse(fieldId = models.EmailField))
+        }.recoverWith {
+          case ex: NullPointerException => Future.successful(VolskayaUserNotExist(errorMsg = ex.getMessage))
+          case exception  => Future.successful(VolskayaDefaultErrorMessage(errorMsg = exception.getMessage))
         }
       case (_, _) =>
         Future.successful(VolskayaIncorrectParameters())
@@ -90,11 +93,17 @@ class UserRepo(repository: UserRepository)(implicit ec: ExecutionContext) {
         repository.updateUserProducer(new ObjectId(id), userProducer).flatMap {
           case user: User => Future.successful(VolskayaSuccessfulResponse(fieldId = models.UserProducerField))
           case _ => Future.successful(VolskayaFailedResponse(fieldId = models.UserProducerField))
+        }.recoverWith {
+          case ex: NullPointerException => Future.successful(VolskayaUserNotExist(errorMsg = ex.getMessage))
+          case exception  => Future.successful(VolskayaDefaultErrorMessage(errorMsg = exception.getMessage))
         }
       case (Some(id), None, Some(userCyclist)) =>
         repository.updateUserCyclist(new ObjectId(id), userCyclist).flatMap {
           case user: User => Future.successful(VolskayaSuccessfulResponse(fieldId = models.UserCyclistField))
           case _ => Future.successful(VolskayaFailedResponse(fieldId = models.UserCyclistField))
+        }.recoverWith {
+          case ex: NullPointerException => Future.successful(VolskayaUserNotExist(errorMsg = ex.getMessage))
+          case exception  => Future.successful(VolskayaDefaultErrorMessage(errorMsg = exception.getMessage))
         }
       case (_, _, _) =>
         Future.successful(VolskayaIncorrectParameters())
@@ -107,6 +116,9 @@ class UserRepo(repository: UserRepository)(implicit ec: ExecutionContext) {
         repository.updatePassword(new ObjectId(id), password).flatMap {
           case user: User => Future.successful(VolskayaSuccessfulResponse(fieldId = models.PasswordField))
           case _ => Future.successful(VolskayaFailedResponse(fieldId = models.PasswordField))
+        }.recoverWith {
+          case ex: NullPointerException => Future.successful(VolskayaUserNotExist(errorMsg = ex.getMessage))
+          case exception  => Future.successful(VolskayaDefaultErrorMessage(errorMsg = exception.getMessage))
         }
       case (_, _) =>
         Future.successful(VolskayaIncorrectParameters())
@@ -132,7 +144,7 @@ class UserRepo(repository: UserRepository)(implicit ec: ExecutionContext) {
     val distanceMatrix = DistanceMatrixApi.getDistanceMatrix(origins, destinations, units = Some(Units.metric))(context)
 
     distanceMatrix.foreach(println(_))
-
+    // TODO implement a better solution for this part
     distanceMatrix.flatMap {
       case dm:DistanceMatrix if dm.status == "OK" =>
         val price = for {
@@ -152,6 +164,9 @@ class UserRepo(repository: UserRepository)(implicit ec: ExecutionContext) {
         repository.verifyLogin(email, password).flatMap {
           case true => Future.successful(VolskayaSuccessfulLogin())
           case false =>  Future.successful(VolskayaFailedLogin())
+        }.recoverWith {
+          case ex: NullPointerException => Future.successful(VolskayaUserNotExist(errorMsg = ex.getMessage))
+          case exception  => Future.successful(VolskayaDefaultErrorMessage(errorMsg = exception.getMessage))
         }
       case (_ , _ ) => Future.successful(VolskayaIncorrectParameters())
     }

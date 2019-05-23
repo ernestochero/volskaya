@@ -40,4 +40,12 @@ object VolskayaMessages {
     override val responseMessage: String = s"Failed to Login"
   }
 
+  case  class VolskayaUserNotExist(responseCode: String = "22",  errorMsg:String) extends VolskayaResponse {
+    override val responseMessage: String = s"The User Doesn't Exist : $errorMsg"
+  }
+
+  case class VolskayaDefaultErrorMessage(responseCode: String = "22", errorMsg:String) extends VolskayaResponse {
+    override val responseMessage: String = s"An unsuspected error happened : $errorMsg"
+  }
+
 }
