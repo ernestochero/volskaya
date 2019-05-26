@@ -8,6 +8,7 @@ case object PasswordField extends FieldId("password")
 case object EmailField extends FieldId("email")
 case object UserProducerField extends FieldId("userProducer")
 case object UserCyclistField extends FieldId("userCyclist")
+case object UserFieldId extends FieldId("user")
 case object DefaultFieldId extends FieldId("")
 
 object VolskayaMessages {
@@ -47,5 +48,17 @@ object VolskayaMessages {
   case class VolskayaDefaultErrorMessage(responseCode: String = "22", errorMsg:String) extends VolskayaResponse {
     override val responseMessage: String = s"An unsuspected error happened : $errorMsg"
   }
+
+  case class VolskayaSuccessfulPrice(responseCode: String = "00") extends VolskayaResponse {
+    override val responseMessage: String = s"The Price Calculated Correctly"
+  }
+
+  case class VolskayaSuccessfulUser(responseCode: String = "00") extends VolskayaResponse {
+    override val responseMessage: String = s"User extracted correctly"
+  }
+
+  case class VolskayaGetPriceResponse(price: Double, volskayaResponse: VolskayaResponse)
+
+  case class VolskayaGetUserResponse(userDomain: UserDomain, volskayaResponse: VolskayaResponse)
 
 }

@@ -1,4 +1,4 @@
-import models.VolskayaMessages.{VolskayaMessage, VolskayaResponse}
+import models.VolskayaMessages.{VolskayaGetPriceResponse, VolskayaGetUserResponse, VolskayaMessage, VolskayaResponse}
 import models._
 import play.api.libs.json.Json
 import repository.UserRepo
@@ -70,6 +70,18 @@ object SchemaDefinition {
       Field("responseMessage", StringType, resolve = _.value.responseMessage)
     ))
 
+  implicit val VolskayaMessagePriceResponseType = ObjectType("volskayaMessagePriceOutputType", "Format to return getPrice request",
+    fields[Unit, VolskayaGetPriceResponse](
+      Field("price", FloatType, resolve = _.value.price),
+      Field("volskayaResponse", VolskayaMessageResponseType, resolve = _.value.volskayaResponse)
+    ))
+
+  implicit val VolskayaMessageUserResponseType = ObjectType("volskayaMessageUserOutputType", "Format to return getUser request",
+    fields[Unit, VolskayaGetUserResponse](
+     Field("user", UserType, resolve = _.value.userDomain),
+     Field("volskayaResponse", VolskayaMessageResponseType, resolve = _.value.volskayaResponse)
+    ))
+
   /* Arguments*/
   val IdArg = Argument("id", OptionInputType(StringType))
   val DeviceArg = Argument("device", OptionInputType(DeviceInputType))
@@ -110,11 +122,19 @@ object SchemaDefinition {
       description = Some("Returns a list of all available users."),
       resolve = _.ctx.allUsers
     ),
-    Field("calculatePriceRoute",ListType(IntType),
-      description = Some("Return a price of one Route"),
-      arguments = RouteArg :: Nil,
+    Field("getUser", VolskayaMessageUserResponseType,
+      description = Some("Return a specific User by ID"),
+      arguments = Argument("id", StringType) :: Nil,
       resolve = context => {
-        context.ctx.calculatePriceRoute(context.arg(RouteArg))
+        context.ctx.getUser(context.arg("id"))
+      }
+    ),
+
+    Field("getPrice", VolskayaMessagePriceResponseType,
+      description = Some("Return a price of one Route"),
+      arguments = Argument("coordinateStart", CoordinateInputType) :: Argument("coordinateFinish", CoordinateInputType) :: Nil,
+      resolve = context => {
+        context.ctx.calculatePriceRoute(context.arg("coordinateStart"), context.arg("coordinateFinish"))
       }
     ),
     Field("login",VolskayaMessageResponseType,
@@ -142,10 +162,11 @@ object SchemaDefinition {
       }
     ),
     Field("updatePassword",VolskayaMessageResponseType,
-      arguments = arguments,
+      arguments = Argument("id", StringType)
+        :: Argument("oldPassword", StringType)
+        :: Argument("newPassword", StringType) :: Nil,
       resolve = context => {
-        val repo = context.ctx
-        repo.updatePassword(buildUserDomain(context))
+        context.ctx.updatePassword(context.arg("id"), context.arg("oldPassword"), context.arg("newPassword"))
       }
     ),
     Field("updateUserType", VolskayaMessageResponseType,
