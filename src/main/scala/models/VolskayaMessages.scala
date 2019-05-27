@@ -1,5 +1,7 @@
 package models
 
+import com.sun.org.apache.xalan.internal.xsltc.compiler.util.ErrorMsg
+
 abstract class FieldId(val name:String) extends Serializable {
   override def toString: String = name
 }
@@ -8,7 +10,9 @@ case object PasswordField extends FieldId("password")
 case object EmailField extends FieldId("email")
 case object UserProducerField extends FieldId("userProducer")
 case object UserCyclistField extends FieldId("userCyclist")
-case object UserFieldId extends FieldId("user")
+case object UserField extends FieldId("user")
+case object PriceFieldId extends FieldId("price")
+case object DistanceFieldId extends FieldId("distance")
 case object DefaultFieldId extends FieldId("")
 
 object VolskayaMessages {
@@ -23,42 +27,30 @@ object VolskayaMessages {
     override def message: String = s"ResponseCode ->  $responseCode with message -> $responseMessage"
   }
 
+
+  def getSuccessUpdateMessage(fieldId: FieldId): String = s"The ${fieldId.name} was updated successfully"
+  def getSuccessLoginMessage(fieldId: FieldId): String = s"The ${fieldId.name} was logged successfully"
+  def getSuccessCalculateMessage(fieldId: FieldId): String = s"The ${fieldId.name} was calculate successfully"
+  def getSuccessGetMessage(fieldId: FieldId): String = s"The ${fieldId.name} was extracted successfully"
+
+  def getFailedUpdateMessage(fieldId: FieldId): String = s"The ${fieldId.name} was updated unsuccessfully"
+  def getFailedLoginMessage(fieldId: FieldId): String = s"The ${fieldId.name} was logged unsuccessfully"
+  def getFailedCalculateMessage(fieldId: FieldId): String = s"The ${fieldId.name} was calculate unsuccessfully"
+  def getFailedGetMessage(fieldId: FieldId): String = s"The ${fieldId.name} was extracted unsuccessfully"
+
+  def getDefaultErrorMessage(errorMsg:String): String = s"An unsuspected error happened : $errorMsg"
+  def getUserNotExistMessage: String = "The User Doesn't Exist"
+
   case class VolskayaIncorrectParameters(responseCode: String = "11", responseMessage: String = "Incorrect Parameters") extends VolskayaResponse
 
-  case class VolskayaSuccessfulResponse(responseCode: String = "00", fieldId: FieldId) extends VolskayaResponse {
-    override val responseMessage = s"The ${fieldId.name} was updated successfully"
-  }
+  case class VolskayaSuccessResponse(responseCode: String = "00", responseMessage: String) extends VolskayaResponse
 
-  case class VolskayaFailedResponse(responseCode: String = "01", fieldId: FieldId) extends VolskayaResponse {
-    override val responseMessage = s"Failed to update the ${fieldId.name}"
-  }
+  case class VolskayaFailedResponse(responseCode: String = "01", responseMessage: String) extends VolskayaResponse
 
-  case class VolskayaSuccessfulLogin(responseCode: String = "20") extends VolskayaResponse {
-    override val responseMessage: String = s"The user Logged successfully"
-  }
+  case class VolskayaGetPriceResponse(price: Option[Double], volskayaResponse: VolskayaResponse)
 
-  case class VolskayaFailedLogin(responseCode: String = "21") extends VolskayaResponse {
-    override val responseMessage: String = s"Failed to Login"
-  }
+  case class VolskayaGetUserResponse(userDomain: Option[UserDomain], volskayaResponse: VolskayaResponse)
 
-  case  class VolskayaUserNotExist(responseCode: String = "22",  errorMsg:String) extends VolskayaResponse {
-    override val responseMessage: String = s"The User Doesn't Exist : $errorMsg"
-  }
-
-  case class VolskayaDefaultErrorMessage(responseCode: String = "22", errorMsg:String) extends VolskayaResponse {
-    override val responseMessage: String = s"An unsuspected error happened : $errorMsg"
-  }
-
-  case class VolskayaSuccessfulPrice(responseCode: String = "00") extends VolskayaResponse {
-    override val responseMessage: String = s"The Price Calculated Correctly"
-  }
-
-  case class VolskayaSuccessfulUser(responseCode: String = "00") extends VolskayaResponse {
-    override val responseMessage: String = s"User extracted correctly"
-  }
-
-  case class VolskayaGetPriceResponse(price: Double, volskayaResponse: VolskayaResponse)
-
-  case class VolskayaGetUserResponse(userDomain: UserDomain, volskayaResponse: VolskayaResponse)
+  case class VolskayaLoginResponse(id:Option[String], volskayaResponse: VolskayaResponse)
 
 }

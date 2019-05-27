@@ -1,4 +1,4 @@
-import models.VolskayaMessages.{VolskayaGetPriceResponse, VolskayaGetUserResponse, VolskayaMessage, VolskayaResponse}
+import models.VolskayaMessages.{VolskayaGetPriceResponse, VolskayaGetUserResponse, VolskayaLoginResponse, VolskayaMessage, VolskayaResponse}
 import models._
 import play.api.libs.json.Json
 import repository.UserRepo
@@ -72,14 +72,20 @@ object SchemaDefinition {
 
   implicit val VolskayaMessagePriceResponseType = ObjectType("volskayaMessagePriceOutputType", "Format to return getPrice request",
     fields[Unit, VolskayaGetPriceResponse](
-      Field("price", FloatType, resolve = _.value.price),
+      Field("price", OptionType(FloatType), resolve = _.value.price),
       Field("volskayaResponse", VolskayaMessageResponseType, resolve = _.value.volskayaResponse)
     ))
 
   implicit val VolskayaMessageUserResponseType = ObjectType("volskayaMessageUserOutputType", "Format to return getUser request",
     fields[Unit, VolskayaGetUserResponse](
-     Field("user", UserType, resolve = _.value.userDomain),
+     Field("user", OptionType(UserType), resolve = _.value.userDomain),
      Field("volskayaResponse", VolskayaMessageResponseType, resolve = _.value.volskayaResponse)
+    ))
+
+  implicit val VolskayaMessageLoginResponseType = ObjectType("volskayaMessageLoginOutputType", "Format to return login request",
+    fields[Unit, VolskayaLoginResponse](
+      Field("id", OptionType(StringType), resolve = _.value.id),
+      Field ("volskayaResponse", VolskayaMessageResponseType, resolve = _.value.volskayaResponse)
     ))
 
   /* Arguments*/
@@ -137,10 +143,10 @@ object SchemaDefinition {
         context.ctx.calculatePriceRoute(context.arg("coordinateStart"), context.arg("coordinateFinish"))
       }
     ),
-    Field("login",VolskayaMessageResponseType,
-      arguments = EmailArg :: PasswordArg :: Nil,
+    Field("login",VolskayaMessageLoginResponseType,
+      arguments = Argument("email", StringType) :: Argument("password", StringType) :: Nil,
       resolve = context => {
-        context.ctx.login(context.arg(EmailArg), context.arg(PasswordArg))
+        context.ctx.login(context.arg("email"), context.arg("password"))
       }
     )
   )
@@ -152,13 +158,6 @@ object SchemaDefinition {
       resolve = context => {
         val repo = context.ctx
         repo.saveUser(buildUserDomain(context))
-      }
-    ),
-    Field("updateEmail",VolskayaMessageResponseType,
-      arguments = arguments,
-      resolve = context => {
-        val repo = context.ctx
-        repo.updateEmail(buildUserDomain(context))
       }
     ),
     Field("updatePassword",VolskayaMessageResponseType,

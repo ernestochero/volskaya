@@ -21,9 +21,9 @@ class UserRepository(collection: MongoCollection[User])(implicit ec:ExecutionCon
 
   def getAllUsers: Future[Seq[User]] = { collection.find().toFuture() }
 
-  def verifyLogin(email:String, password:String): Future[Boolean] = {
-    val filter = Document("email" -> email)
-    collection.find(filter).first().head().map{ _.password.fold(false){ _ == password}}
+  def verifyLogin(email:String, password:String): Future[User] = {
+    val filter = Document("email" -> email, "password" -> password)
+    collection.find(filter).first().head()
   }
 
   def getUser(id: ObjectId): Future[User] = {
@@ -78,47 +78,31 @@ class UserRepo(repository: UserRepository)(implicit ec: ExecutionContext) {
   }
 
   //TODO:  here I call other functions to operate the database
-  def updateEmail(userDomain: UserDomain): Future[VolskayaResponse] = {
-    (userDomain.id, userDomain.email) match {
-      case (Some(id), Some(email)) =>
-        repository.updateEmail(new ObjectId(id), email).flatMap {
-          case user: User => Future.successful(VolskayaSuccessfulResponse(fieldId = models.EmailField))
-          case _ => Future.successful(VolskayaFailedResponse(fieldId = models.EmailField))
-        }.recoverWith {
-          case ex: NullPointerException => Future.successful(VolskayaUserNotExist(errorMsg = ex.getMessage))
-          case exception  => Future.successful(VolskayaDefaultErrorMessage(errorMsg = exception.getMessage))
-        }
-      case (_, _) =>
-        Future.successful(VolskayaIncorrectParameters())
-    }
-  }
-
   // UserDomain(None,None,None,None,None,None,None,None) create a static val
   def getUser(id: String): Future[VolskayaGetUserResponse] = {
     repository.getUser(new ObjectId(id)).flatMap { user =>
-      Future.successful(VolskayaGetUserResponse(user.asDomain, VolskayaSuccessfulUser()))
+      Future.successful(VolskayaGetUserResponse(Some(user.asDomain), VolskayaSuccessResponse(responseMessage = getSuccessGetMessage(models.UserField)) ))
     }.recoverWith {
-      case exception => Future.successful(VolskayaGetUserResponse(UserDomain(None,None,None,None,None,None,None,None), VolskayaDefaultErrorMessage(errorMsg = exception.getMessage)))
+      case exception => Future.successful(VolskayaGetUserResponse(None, VolskayaFailedResponse(responseMessage = getDefaultErrorMessage(errorMsg = exception.getMessage))))
     }
   }
 
+  // update this part ...
   def updateUserType(userDomain: UserDomain):Future[VolskayaResponse] = {
     (userDomain.id, userDomain.userProducer, userDomain.userCyclist) match {
       case (Some(id),Some(userProducer), None) =>
         repository.updateUserProducer(new ObjectId(id), userProducer).flatMap {
-          case user: User => Future.successful(VolskayaSuccessfulResponse(fieldId = models.UserProducerField))
-          case _ => Future.successful(VolskayaFailedResponse(fieldId = models.UserProducerField))
+          case user: User => Future.successful(VolskayaSuccessResponse(responseMessage = getSuccessUpdateMessage(fieldId = models.UserProducerField)))
+          case _ => Future.successful(VolskayaFailedResponse( responseMessage = getFailedUpdateMessage(models.UserProducerField)))
         }.recoverWith {
-          case ex: NullPointerException => Future.successful(VolskayaUserNotExist(errorMsg = ex.getMessage))
-          case exception  => Future.successful(VolskayaDefaultErrorMessage(errorMsg = exception.getMessage))
+          case exception  => Future.successful(VolskayaFailedResponse(responseMessage = getDefaultErrorMessage(errorMsg = exception.getMessage)))
         }
       case (Some(id), None, Some(userCyclist)) =>
         repository.updateUserCyclist(new ObjectId(id), userCyclist).flatMap {
-          case user: User => Future.successful(VolskayaSuccessfulResponse(fieldId = models.UserCyclistField))
-          case _ => Future.successful(VolskayaFailedResponse(fieldId = models.UserCyclistField))
+          case user: User => Future.successful(VolskayaSuccessResponse(responseMessage = getSuccessUpdateMessage(fieldId = models.UserCyclistField)) )
+          case _ => Future.successful(VolskayaFailedResponse(responseMessage = getFailedUpdateMessage(models.UserCyclistField)))
         }.recoverWith {
-          case ex: NullPointerException => Future.successful(VolskayaUserNotExist(errorMsg = ex.getMessage))
-          case exception  => Future.successful(VolskayaDefaultErrorMessage(errorMsg = exception.getMessage))
+          case exception  => Future.successful(VolskayaFailedResponse(responseMessage = getDefaultErrorMessage(errorMsg = exception.getMessage)))
         }
       case (_, _, _) =>
         Future.successful(VolskayaIncorrectParameters())
@@ -128,11 +112,11 @@ class UserRepo(repository: UserRepository)(implicit ec: ExecutionContext) {
   def updatePassword(_id: String, oldPassword: String, newPassword: String): Future[VolskayaResponse] = {
     repository.updatePassword(new ObjectId(_id), oldPassword, newPassword).flatMap {
       case res:UpdateResult if (res.getMatchedCount == 1) && res.wasAcknowledged() =>
-        Future.successful(VolskayaSuccessfulResponse(fieldId = PasswordField))
+        Future.successful(VolskayaSuccessResponse(responseMessage = getSuccessUpdateMessage(fieldId = PasswordField)))
       case _ =>
-        Future.successful(VolskayaFailedResponse(fieldId = PasswordField))
+        Future.successful(VolskayaFailedResponse(responseMessage = getFailedUpdateMessage(fieldId = PasswordField)))
     }.recoverWith {
-      case exception => Future.successful(VolskayaDefaultErrorMessage(errorMsg = exception.getMessage))
+      case exception => Future.successful(VolskayaFailedResponse(responseMessage = getDefaultErrorMessage(errorMsg = exception.getMessage)))
     }
   }
 
@@ -164,25 +148,19 @@ class UserRepo(repository: UserRepository)(implicit ec: ExecutionContext) {
         } yield {
           calculateByDistance(element.distance.value)
         }
-        Future.successful(VolskayaGetPriceResponse(price.headOption.getOrElse(0.0), VolskayaSuccessfulPrice()))
-      case _ => Future.successful(VolskayaGetPriceResponse(0.0, VolskayaDefaultErrorMessage(errorMsg = "Status Fail")))
+        Future.successful(VolskayaGetPriceResponse(price.headOption, VolskayaSuccessResponse(responseMessage = getSuccessCalculateMessage(models.PriceFieldId))))
+      case _ => Future.successful(VolskayaGetPriceResponse(None, VolskayaFailedResponse(responseMessage = getFailedCalculateMessage(models.PriceFieldId))))
     }.recoverWith {
-      case exception => Future.successful(VolskayaGetPriceResponse(0.0, VolskayaDefaultErrorMessage(errorMsg = exception.getMessage)))
+      case exception => Future.successful(VolskayaGetPriceResponse(None, VolskayaFailedResponse(responseMessage = getDefaultErrorMessage(errorMsg = exception.getMessage))))
     }
   }
 
-  def login(maybeEmail:Option[String], maybePassword:Option[String]): Future[VolskayaResponse] = {
-    (maybeEmail, maybePassword) match {
-      case (Some(email), Some(password)) =>
-        repository.verifyLogin(email, password).flatMap {
-          case true => Future.successful(VolskayaSuccessfulLogin())
-          case false =>  Future.successful(VolskayaFailedLogin())
-        }.recoverWith {
-          case ex: NullPointerException => Future.successful(VolskayaUserNotExist(errorMsg = ex.getMessage))
-          case exception  => Future.successful(VolskayaDefaultErrorMessage(errorMsg = exception.getMessage))
-        }
-      case (_ , _ ) => Future.successful(VolskayaIncorrectParameters())
-    }
+  def login(email:String, password: String): Future[VolskayaLoginResponse] = {
+      repository.verifyLogin(email, password).flatMap { user =>
+        Future.successful(VolskayaLoginResponse(Some(user._id.toHexString), VolskayaSuccessResponse(responseMessage = getSuccessLoginMessage(models.UserField))))
+      }.recoverWith {
+        case exception  => Future.successful(VolskayaLoginResponse(None, VolskayaFailedResponse(responseMessage = getDefaultErrorMessage(errorMsg = exception.getMessage))))
+      }
   }
 
 
