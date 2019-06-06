@@ -2,7 +2,7 @@ package repository
 
 import googleMapsService.{Context, DistanceMatrixApi}
 import org.mongodb.scala._
-import models.{Coordinate, PasswordField, Route, User, UserCyclist, UserDomain, UserProducer}
+import models.{Coordinate, Device, PasswordField, Route, User, UserCyclist, UserDomain, UserProducer}
 import org.mongodb.scala.bson.ObjectId
 import googleMapsService.model.{Distance, DistanceMatrix, Units}
 
@@ -159,8 +159,21 @@ class UserRepo(repository: UserRepository)(implicit ec: ExecutionContext) {
       repository.verifyLogin(email, password).flatMap { user =>
         Future.successful(VolskayaLoginResponse(Some(user._id.toHexString), VolskayaSuccessResponse(responseMessage = getSuccessLoginMessage(models.UserField))))
       }.recoverWith {
-        case exception  => Future.successful(VolskayaLoginResponse(None, VolskayaFailedResponse(responseMessage = getDefaultErrorMessage(errorMsg = exception.getMessage))))
+        case exception  => Future.successful(VolskayaLoginResponse(None,
+          VolskayaFailedResponse(responseMessage = getDefaultErrorMessage(errorMsg = exception.getMessage))))
       }
+  }
+
+  def register(email: String, password: String, phoneNumber: String) = {
+    val device = Device(name = "", number = phoneNumber, imei = "")
+    val user = User(email = Some(email), password = Some(password), device = Some(device))
+    repository.saveUser(user).flatMap { user =>
+      Future.successful(VolskayaRegisterResponse(Some(user._id.toHexString),
+        VolskayaSuccessResponse(responseMessage = getSuccessRegisteredMessage(models.UserField))))
+    }.recoverWith {
+      case exception =>  Future.successful(VolskayaRegisterResponse(None,
+        VolskayaFailedResponse(responseMessage = getDefaultErrorMessage(errorMsg = exception.getMessage))))
+    }
   }
 
 

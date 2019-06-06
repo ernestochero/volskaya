@@ -8,7 +8,7 @@ trait Person {
   val dni: String
 }
 
-case class Device(name:String, number:String, imei:String, token: Option[String])
+case class Device(name:String, number:String, imei:String, token: Option[String] = None)
 
 case class UserProducer(nameCompany:String, address: String, phone:String, ruc: String)
 
@@ -28,12 +28,12 @@ case class UserDomain(id: Option[String],
 }
 
 case class User(_id: ObjectId = new ObjectId(),
-                        device: Option[Device],
-                        userCyclist: Option[UserCyclist],
-                        userProducer: Option[UserProducer],
-                        email: Option[String],
-                        password: Option[String],
-                        isAuthenticated: Option[Boolean],
-                        orders: Option[List[Order]]) {
+                        device: Option[Device] = None,
+                        userCyclist: Option[UserCyclist] = None,
+                        userProducer: Option[UserProducer] = None,
+                        email: Option[String] = None,
+                        password: Option[String] = None,
+                        isAuthenticated: Option[Boolean] = None,
+                        orders: Option[List[Order]] = None) {
   def asDomain = UserDomain(Some(_id.toHexString),device, userCyclist, userProducer, email, password, isAuthenticated, orders)
 }

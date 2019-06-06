@@ -1,4 +1,4 @@
-import models.VolskayaMessages.{VolskayaGetPriceResponse, VolskayaGetUserResponse, VolskayaLoginResponse, VolskayaMessage, VolskayaResponse}
+import models.VolskayaMessages._
 import models._
 import play.api.libs.json.Json
 import repository.UserRepo
@@ -88,6 +88,12 @@ object SchemaDefinition {
       Field ("volskayaResponse", VolskayaMessageResponseType, resolve = _.value.volskayaResponse)
     ))
 
+  implicit val VolskayaMessageRegisterResponseType = ObjectType("volskayaMessageRegisterOutputType", "Format to return register request",
+    fields[Unit, VolskayaRegisterResponse](
+      Field("id", OptionType(StringType), resolve = _.value.id),
+      Field ("volskayaResponse", VolskayaMessageResponseType, resolve = _.value.volskayaResponse)
+    ))
+
   /* Arguments*/
   val IdArg = Argument("id", OptionInputType(StringType))
   val DeviceArg = Argument("device", OptionInputType(DeviceInputType))
@@ -173,6 +179,14 @@ object SchemaDefinition {
       resolve = context => {
         val repo = context.ctx
         repo.updateUserType(buildUserDomain(context))
+      }
+    ),
+    Field("register", VolskayaMessageRegisterResponseType,
+      arguments = Argument("email", StringType)
+        :: Argument("password", StringType)
+        :: Argument("phoneNumber", StringType) :: Nil,
+      resolve = context => {
+        context.ctx.register(context.arg("email"), context.arg("password"), context.arg("phoneNumber"))
       }
     )
    )

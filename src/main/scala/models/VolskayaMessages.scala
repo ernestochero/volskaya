@@ -32,6 +32,7 @@ object VolskayaMessages {
   def getSuccessLoginMessage(fieldId: FieldId): String = s"The ${fieldId.name} was logged successfully"
   def getSuccessCalculateMessage(fieldId: FieldId): String = s"The ${fieldId.name} was calculate successfully"
   def getSuccessGetMessage(fieldId: FieldId): String = s"The ${fieldId.name} was extracted successfully"
+  def getSuccessRegisteredMessage(fieldId: FieldId): String = s"The ${fieldId.name} was registered successfully"
 
   def getFailedUpdateMessage(fieldId: FieldId): String = s"The ${fieldId.name} was updated unsuccessfully"
   def getFailedLoginMessage(fieldId: FieldId): String = s"The ${fieldId.name} was logged unsuccessfully"
@@ -52,5 +53,7 @@ object VolskayaMessages {
   case class VolskayaGetUserResponse(userDomain: Option[UserDomain], volskayaResponse: VolskayaResponse)
 
   case class VolskayaLoginResponse(id:Option[String], volskayaResponse: VolskayaResponse)
+
+  case class VolskayaRegisterResponse(id: Option[String], volskayaResponse: VolskayaResponse)
 
 }
