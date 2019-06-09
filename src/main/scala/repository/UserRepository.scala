@@ -2,7 +2,7 @@ package repository
 
 import googleMapsService.{Context, DistanceMatrixApi}
 import org.mongodb.scala._
-import models.{Coordinate, Device, PasswordField, Route, User, UserCyclist, UserDomain, UserProducer}
+import models._
 import org.mongodb.scala.bson.ObjectId
 import googleMapsService.model.{Distance, DistanceMatrix, Units}
 
@@ -43,33 +43,32 @@ class UserRepository(collection: MongoCollection[User])(implicit ec:ExecutionCon
     collection.updateOne(filter, update).head()
   }
 
-  def updateUserCyclist(_id: ObjectId, userCyclist: UserCyclist): Future[User] = {
+  def updatePersonalInformation(_id: ObjectId, personalInformation: PersonalInformation): Future[User] = {
     val filter = Document("_id" -> _id)
     val fields = Document(
-      "firstName" -> userCyclist.firstName,
-      "lastName" -> userCyclist.lastName,
-      "dni" -> userCyclist.dni
+      "firstName" -> personalInformation.firstName,
+      "lastName" -> personalInformation.lastName,
+      "dni" -> personalInformation.dni
     )
-    val update = Document("$set" -> Document("userCyclist" -> fields))
+    val update = Document("$set" -> Document("personalInformation" -> fields))
     collection.findOneAndUpdate(filter, update).head()
   }
 
-  def updateUserProducer(_id: ObjectId, userProducer: UserProducer): Future[User] = {
-    val fields = Document(
-      "nameCompany" -> userProducer.nameCompany,
-      "address" -> userProducer.address,
-      "phone" -> userProducer.phone,
-      "ruc" -> userProducer.ruc
+  def addFavoriteSite(_id: ObjectId, favoriteSite: FavoriteSite) = {
+    val favoriteSiteField = Document(
+      "coordinate" -> Document("latitude" -> favoriteSite.coordinate.latitude, "longitude" -> favoriteSite.coordinate.longitude),
+      "name" -> favoriteSite.name,
+      "address" -> favoriteSite.address
     )
     val filter = Document("_id" -> _id)
-    val update = Document("$set" ->  Document("userProducer" -> fields))
-    collection.findOneAndUpdate(filter, update).head()
+    val update = Document("$push" -> Document("favoriteSites" -> favoriteSiteField))
+    collection.updateOne(filter, update).head()
   }
 }
 
 class UserRepo(repository: UserRepository)(implicit ec: ExecutionContext) {
   // TODO this context should be move to another place
-  val context = Context(apiKey = "AIzaSyCXK3faSiD-RBShPD2TK1z1pRRpRaBdYtg")
+    val context = Context(apiKey = "AIzaSyCXK3faSiD-RBShPD2TK1z1pRRpRaBdYtg")
 
   def allUsers = repository.getAllUsers.map( user => user.map(_.asDomain ))
 
@@ -84,28 +83,6 @@ class UserRepo(repository: UserRepository)(implicit ec: ExecutionContext) {
       Future.successful(VolskayaGetUserResponse(Some(user.asDomain), VolskayaSuccessResponse(responseMessage = getSuccessGetMessage(models.UserField)) ))
     }.recoverWith {
       case exception => Future.successful(VolskayaGetUserResponse(None, VolskayaFailedResponse(responseMessage = getDefaultErrorMessage(errorMsg = exception.getMessage))))
-    }
-  }
-
-  // update this part ...
-  def updateUserType(userDomain: UserDomain):Future[VolskayaResponse] = {
-    (userDomain.id, userDomain.userProducer, userDomain.userCyclist) match {
-      case (Some(id),Some(userProducer), None) =>
-        repository.updateUserProducer(new ObjectId(id), userProducer).flatMap {
-          case user: User => Future.successful(VolskayaSuccessResponse(responseMessage = getSuccessUpdateMessage(fieldId = models.UserProducerField)))
-          case _ => Future.successful(VolskayaFailedResponse( responseMessage = getFailedUpdateMessage(models.UserProducerField)))
-        }.recoverWith {
-          case exception  => Future.successful(VolskayaFailedResponse(responseMessage = getDefaultErrorMessage(errorMsg = exception.getMessage)))
-        }
-      case (Some(id), None, Some(userCyclist)) =>
-        repository.updateUserCyclist(new ObjectId(id), userCyclist).flatMap {
-          case user: User => Future.successful(VolskayaSuccessResponse(responseMessage = getSuccessUpdateMessage(fieldId = models.UserCyclistField)) )
-          case _ => Future.successful(VolskayaFailedResponse(responseMessage = getFailedUpdateMessage(models.UserCyclistField)))
-        }.recoverWith {
-          case exception  => Future.successful(VolskayaFailedResponse(responseMessage = getDefaultErrorMessage(errorMsg = exception.getMessage)))
-        }
-      case (_, _, _) =>
-        Future.successful(VolskayaIncorrectParameters())
     }
   }
 
@@ -176,5 +153,14 @@ class UserRepo(repository: UserRepository)(implicit ec: ExecutionContext) {
     }
   }
 
+  def addFavoriteSite(id: String, favoriteSite: FavoriteSite) = {
+    repository.addFavoriteSite(new ObjectId(id), favoriteSite).flatMap {
+      case result: UpdateResult  if (result.getMatchedCount == 1) && result.wasAcknowledged() =>
+        Future.successful(VolskayaSuccessResponse(responseMessage = getSuccessUpdateMessage(fieldId = FavoriteSiteFieldId)))
+      case _ => Future.successful(VolskayaFailedResponse(responseMessage = getFailedUpdateMessage(fieldId = FavoriteSiteFieldId)))
+    }.recoverWith {
+      case exception => Future.successful(VolskayaFailedResponse(responseMessage = getDefaultErrorMessage(errorMsg = exception.getMessage)))
+    }
+  }
 
 }

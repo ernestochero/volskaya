@@ -33,13 +33,13 @@ object SchemaDefinition {
   implicit val deviceFormat  = Json.format[Device]
   implicit val DeviceInputType = deriveInputObjectType[Device](InputObjectTypeName("DeviceFieldsInput"))
 
-  implicit val UserProducerType = deriveObjectType[Unit, UserProducer]()
-  implicit val userProducerFormat = Json.format[UserProducer]
-  implicit val UserProducerInputType = deriveInputObjectType[UserProducer](InputObjectTypeName("UserProducerFieldsInput"))
+  implicit val PersonalInformationType = deriveObjectType[Unit, PersonalInformation]()
+  implicit val personalInformationFormat = Json.format[PersonalInformation]
+  implicit val PersonalInformationInputType = deriveInputObjectType[PersonalInformation](InputObjectTypeName("PersonalInformationFieldsInput"))
 
-  implicit val UserCyclistType = deriveObjectType[Unit, UserCyclist]()
-  implicit val userCyclistFormat  = Json.format[UserCyclist]
-  implicit val UserCyclistInputType = deriveInputObjectType[UserCyclist](InputObjectTypeName("UserCyclistFieldsInput"))
+  implicit val FavoriteSiteType = deriveObjectType[Unit, FavoriteSite]()
+  implicit val FavoriteSiteFormat = Json.format[FavoriteSite]
+  implicit val FavoriteSiteInputType = deriveInputObjectType[FavoriteSite](InputObjectTypeName("FavoriteSiteFieldsInput"))
 
   implicit val UserType = deriveObjectType[Unit, UserDomain]()
   implicit val userFormat = Json.format[UserDomain]
@@ -48,13 +48,6 @@ object SchemaDefinition {
   implicit val RouteType = deriveObjectType[Unit, Route]()
   implicit val routeFormat = Json.format[Route]
   implicit val RouteInputType = deriveInputObjectType[Route](InputObjectTypeName("RouteFieldsInput"))
-
-  implicit val PersonType: InterfaceType[Unit, Person] = InterfaceType("Person", "person description",
-    () => fields[Unit, Person](
-      Field("firstName", StringType, resolve = _.value.firstName),
-      Field("lastName", StringType, resolve = _.value.lastName),
-      Field("dni", StringType, resolve = _.value.dni)
-    ))
 
   /* custom types*/
 
@@ -97,35 +90,35 @@ object SchemaDefinition {
   /* Arguments*/
   val IdArg = Argument("id", OptionInputType(StringType))
   val DeviceArg = Argument("device", OptionInputType(DeviceInputType))
-  val UserCyclistArg = Argument("userCyclist", OptionInputType(UserCyclistInputType))
-  val UserProducerArg = Argument("userProducer", OptionInputType(UserProducerInputType))
+  val PersonalInformationArg = Argument("personalInformation", OptionInputType(PersonalInformationInputType))
   val EmailArg = Argument("email", OptionInputType(StringType))
   val PasswordArg = Argument("password", OptionInputType(StringType))
   val IsAuthenticatedArg = Argument("isAuthenticated", OptionInputType(BooleanType))
   val OrdersArg = Argument("orders", OptionInputType(ListInputType(OrderInputType)))
   val RouteArg = Argument("route", RouteInputType)
+  val FavoriteSitesArg = Argument("favoriteSites", OptionInputType(ListInputType(FavoriteSiteInputType)))
 
   val arguments = List(
     IdArg,
     DeviceArg,
-    UserCyclistArg,
-    UserProducerArg,
+    PersonalInformationArg,
     EmailArg,
     PasswordArg,
     IsAuthenticatedArg,
-    OrdersArg
+    OrdersArg,
+    FavoriteSitesArg
   )
 
   def buildUserDomain(context:Context[UserRepo, Unit]): UserDomain = {
     UserDomain(
       context.arg(IdArg),
       context.arg(DeviceArg),
-      context.arg(UserCyclistArg),
-      context.arg(UserProducerArg),
+      context.arg(PersonalInformationArg),
       context.arg(EmailArg),
       context.arg(PasswordArg),
       context.arg(IsAuthenticatedArg),
-      context.arg(OrdersArg).map(_.toList)
+      context.arg(OrdersArg).map(_.toList),
+      context.arg(FavoriteSitesArg).map(_.toList)
     )
   }
 
@@ -174,19 +167,20 @@ object SchemaDefinition {
         context.ctx.updatePassword(context.arg("id"), context.arg("oldPassword"), context.arg("newPassword"))
       }
     ),
-    Field("updateUserType", VolskayaMessageResponseType,
-      arguments = arguments,
-      resolve = context => {
-        val repo = context.ctx
-        repo.updateUserType(buildUserDomain(context))
-      }
-    ),
     Field("register", VolskayaMessageRegisterResponseType,
       arguments = Argument("email", StringType)
         :: Argument("password", StringType)
         :: Argument("phoneNumber", StringType) :: Nil,
       resolve = context => {
         context.ctx.register(context.arg("email"), context.arg("password"), context.arg("phoneNumber"))
+      }
+    ),
+    Field("addFavoriteSite", VolskayaMessageResponseType,
+      arguments = Argument("id", StringType)
+        :: Argument("favoriteSite", FavoriteSiteInputType)
+        :: Nil,
+      resolve = context => {
+        context.ctx.addFavoriteSite(context.arg("id"), context.arg("favoriteSite"))
       }
     )
    )

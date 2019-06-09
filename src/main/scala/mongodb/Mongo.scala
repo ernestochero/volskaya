@@ -9,18 +9,18 @@ import org.mongodb.scala.{MongoClient, MongoCollection, MongoDatabase}
 object Mongo {
   lazy val userCodecProvider = Macros.createCodecProvider[User]()
   lazy val deviceCodecProvider = Macros.createCodecProvider[Device]()
-  lazy val userCyclistCodecProvider = Macros.createCodecProvider[UserCyclist]()
-  lazy val userProducerCodecProvider = Macros.createCodecProvider[UserProducer]()
   lazy val orderCodecProvider = Macros.createCodecProvider[Order]()
   lazy val goalCodecProvider = Macros.createCodecProvider[Goal]()
   lazy val goalCanceledCodecProvider = Macros.createCodecProvider[GoalCanceled]()
   lazy val coordinateCodecProvider = Macros.createCodecProvider[Coordinate]()
   lazy val productCodecProvider = Macros.createCodecProvider[Product]()
+  lazy val addFavoriteSiteCodecProvider = Macros.createCodecProvider[FavoriteSite]()
+  lazy val personalInformationCodecProvider = Macros.createCodecProvider[PersonalInformation]()
   lazy val config = ConfigFactory.load()
   lazy val mongoClient: MongoClient = MongoClient(config.getString("mongo.uri"))
   lazy val codecRegistry = fromRegistries(
-    fromProviders(userCodecProvider, deviceCodecProvider, userCyclistCodecProvider, userProducerCodecProvider,
-      orderCodecProvider, goalCodecProvider, goalCanceledCodecProvider, coordinateCodecProvider, productCodecProvider),
+    fromProviders(userCodecProvider, deviceCodecProvider, personalInformationCodecProvider,
+      orderCodecProvider, addFavoriteSiteCodecProvider, goalCodecProvider, goalCanceledCodecProvider, coordinateCodecProvider, productCodecProvider),
     DEFAULT_CODEC_REGISTRY)
   lazy val database: MongoDatabase = mongoClient.getDatabase(config.getString("mongo.database")).withCodecRegistry(codecRegistry)
 

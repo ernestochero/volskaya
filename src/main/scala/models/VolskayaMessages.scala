@@ -8,11 +8,11 @@ abstract class FieldId(val name:String) extends Serializable {
 
 case object PasswordField extends FieldId("password")
 case object EmailField extends FieldId("email")
-case object UserProducerField extends FieldId("userProducer")
-case object UserCyclistField extends FieldId("userCyclist")
+case object PersonalInformationFieldId extends FieldId("personalInformation")
 case object UserField extends FieldId("user")
 case object PriceFieldId extends FieldId("price")
 case object DistanceFieldId extends FieldId("distance")
+case object FavoriteSiteFieldId extends FieldId("favoriteSite")
 case object DefaultFieldId extends FieldId("")
 
 object VolskayaMessages {
