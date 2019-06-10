@@ -13,6 +13,7 @@ case object UserField extends FieldId("user")
 case object PriceFieldId extends FieldId("price")
 case object DistanceFieldId extends FieldId("distance")
 case object FavoriteSiteFieldId extends FieldId("favoriteSite")
+case object VerificationCodeId extends FieldId("verificationCode")
 case object DefaultFieldId extends FieldId("")
 
 object VolskayaMessages {
@@ -33,6 +34,7 @@ object VolskayaMessages {
   def getSuccessCalculateMessage(fieldId: FieldId): String = s"The ${fieldId.name} was calculate successfully"
   def getSuccessGetMessage(fieldId: FieldId): String = s"The ${fieldId.name} was extracted successfully"
   def getSuccessRegisteredMessage(fieldId: FieldId): String = s"The ${fieldId.name} was registered successfully"
+  def getSuccessSendcode(fieldId: FieldId): String = s"The ${fieldId.name} was sent successfully"
 
   def getFailedUpdateMessage(fieldId: FieldId): String = s"The ${fieldId.name} was updated unsuccessfully"
   def getFailedLoginMessage(fieldId: FieldId): String = s"The ${fieldId.name} was logged unsuccessfully"

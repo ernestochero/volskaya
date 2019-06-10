@@ -147,6 +147,12 @@ object SchemaDefinition {
       resolve = context => {
         context.ctx.login(context.arg("email"), context.arg("password"))
       }
+    ),
+    Field("sendCode", VolskayaMessageResponseType,
+      arguments = Argument("code", StringType) :: Argument("phoneNumber", StringType) :: Nil,
+      resolve = context => {
+        context.ctx.sendCode(context.arg("code"), context.arg("phoneNumber"))
+      }
     )
   )
   )

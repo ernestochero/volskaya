@@ -1,10 +1,11 @@
 package repository
 
-import googleMapsService.{Context, ContextGoogleMaps, DistanceMatrixApi}
+import googleMapsService.{Context, ContextFCM, ContextGoogleMaps, DistanceMatrixApi}
 import org.mongodb.scala._
 import models._
 import org.mongodb.scala.bson.ObjectId
 import googleMapsService.model.{Distance, DistanceMatrix, Units}
+import googlefcmservice.SendNotificationApi
 
 import scala.concurrent.{ExecutionContext, Future}
 import models.VolskayaMessages._
@@ -140,6 +141,24 @@ class UserRepo(repository: UserRepository)(implicit ec: ExecutionContext) {
           VolskayaFailedResponse(responseMessage = getDefaultErrorMessage(errorMsg = exception.getMessage))))
       }
   }
+
+  def sendCode(code: String, phoneNumber: String): Future[VolskayaResponse] = {
+    val context = ContextFCM(to = "cwcramwMhOo:APA91bG-p6fxc9EDUo8BD5MBk5y4zo04QF1Hi8DQ8frc3z38SmI1a4SGOc0TSkilJeMp_wALf17NRBVxUi51GLk2EYikjXfbRwy-ngjXT9lHkGk-iPCnMqBtW8wLxF2V51_oU38jPAlA",
+        key = "AAAANyt87aU:APA91bFQjPaK7WRgEdzArxyuafUZFWZ0HR6LtFJWuc1q9Y6IrCu1sbgo2dU-7ywZNSIsqEdMkaISbkCs1nSZIaT3pKFwT7YaGsOm4gtHRsqrGMRuT9qzLDnQdt3mwLFBePij08xoAnex")
+
+    val sendCodeResult = SendNotificationApi.sendNotificationCode()(context)
+    sendCodeResult.flatMap { result =>
+        if(result.success == 1) {
+          Future.successful(VolskayaSuccessResponse(responseMessage = getSuccessSendcode(fieldId = VerificationCodeId)))
+        } else {
+          Future.successful(VolskayaFailedResponse(responseMessage = getDefaultErrorMessage(errorMsg = s" Failure = ${result.failure}")))
+        }
+    }.recoverWith {
+      case exception =>
+        Future.successful(VolskayaFailedResponse(responseMessage = getDefaultErrorMessage(errorMsg = exception.getMessage)))
+    }
+  }
+
 
   def register(email: String, password: String, phoneNumber: String) = {
     val device = Device(name = "", number = phoneNumber, imei = "")

@@ -31,7 +31,7 @@ case class SendNotificationApiRequest(context: ContextFCM) extends  Request[Send
   val phoneNumber = "987913771"
   val input:JsValue = Json.obj("to" -> context.to, "data" -> Json.obj("sms" -> sms, "numero" -> phoneNumber))
 
-  def authorization: Authorization = Authorization(BasicHttpCredentials("key",context.key))
+  def authorization: Authorization = Authorization("key",context.key)
   override def method: HttpMethod = HttpMethods.POST
   override def entity = HttpEntity(ContentTypes.`application/json`, Json.stringify(input))
   override def baseUri: String = {
