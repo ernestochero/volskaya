@@ -4,9 +4,11 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.headers.Authorization
 import akka.http.scaladsl.unmarshalling.{Unmarshal, Unmarshaller}
 import akka.stream.ActorMaterializer
 
+import scala.collection.immutable
 import scala.concurrent.Future
 
 
@@ -16,20 +18,17 @@ trait Request[M] {
   implicit val materializer = ActorMaterializer()
   implicit val executionContext = system.dispatcher
 
-  val BASE_URI = "https://maps.googleapis.com/maps/api"
-  var params = Map[String, String]()
-
-  def makeRequest()(implicit um:Unmarshaller[ResponseEntity, M]): Future[M] = {
-    val request = buildRequest()
+  def makeRequest(params: Map[String, String])(implicit um:Unmarshaller[ResponseEntity, M]): Future[M] = {
+    val request = buildRequest(params)
     fetch(request)
   }
 
-  def buildRequest() = {
-    params("key", key)
-
+  def buildRequest(params: Map[String, String]): HttpRequest = {
     HttpRequest(
-      uri = buildUri().toString(),
-      method = HttpMethods.GET
+      uri = buildUri(params).toString(),
+      method = method,
+      headers = headers,
+      entity = entity
     )
   }
 
@@ -45,18 +44,17 @@ trait Request[M] {
   def validateRequest() = {}
 
   def uri(): String = { "" }
-  def key(): String = { "" }
+  def method: HttpMethod = HttpMethods.GET
+  def entity = HttpEntity.Empty
+  def baseUri: String = { "" }
+  def headers: immutable.Seq[HttpHeader] = Nil
 
-  def buildUri() = {
-    Uri(BASE_URI + uri).withQuery(buildQuery())
+  def buildUri(params: Map[String, String]): Uri = {
+    Uri(baseUri + uri).withQuery(buildQuery(params))
   }
 
-  def buildQuery() = {
+  def buildQuery(params: Map[String, String]): Query = {
     Query(params)
-  }
-
-  def params(key: String, value: String) {
-    params += (key -> value)
   }
 
 }

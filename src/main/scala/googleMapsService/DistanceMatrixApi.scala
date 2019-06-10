@@ -37,79 +37,91 @@ object DistanceMatrixApi extends JsonSupport {
                         trafficModel: Option[TrafficModel] = None,
                         transitMode: Option[List[TransitMode]] = None,
                         transitRoutingPreference: Option[TransitRoutingPreference] = None
-                       )(implicit context: Context) = {
+                       )(implicit context: ContextGoogleMaps) = {
 
     val request = new DistanceMatrixApiRequest(context)
 
-    request.params("origins", origins.mkString("|"))
-    request.params("destinations", destinations.mkString("|"))
 
-    units match {
-      case Some(value) => request.params("units", value.toString)
-      case None => {}
+    val originsParam = Map("origins" -> origins.mkString("|"))
+    val destinationsParam = Map("destinations" -> destinations.mkString("|"))
+
+
+    val unitsParam = units match {
+      case Some(value) => Map("units" -> value.toString)
+      case None => Map.empty[String, String]
     }
 
-    mode match {
-      case Some(value) => request.params("mode", value.toString)
-      case None => {}
+    val modeParam =  mode match {
+      case Some(value) => Map("mode" -> value.toString)
+      case None => Map.empty[String, String]
     }
 
-    language match {
-      case Some(value) => request.params("language", value.toString)
-      case None => {}
+    val languageParam = language match {
+      case Some(value) => Map("language" -> value.toString)
+      case None => Map.empty[String, String]
     }
 
     // integer in seconds since midnight, January 1, 1970 UTC
     // can online specify one of arrival_time or departure_time
-    arrivalTime match {
-      case Some(value) => request.params("arrival_time", value.toString())
-      case None => {}
+    val arrivalTimeParam = arrivalTime match {
+      case Some(value) => Map("arrival_time" -> value.toString())
+      case None => Map.empty[String, String]
     }
 
     // integer in seconds since midnight, January 1, 1970 UTC or "now"
-    departureTime match {
-      case Some(Left(value)) => request.params("departure_time", value.toString())
-      case Some(Right(value)) => request.params("departure_time", value)
-      case None => {}
+    val departureTimeParam = departureTime match {
+      case Some(Left(value)) => Map("departure_time" -> value.toString())
+      case Some(Right(value)) => Map("departure_time" -> value)
+      case None => Map.empty[String, String]
     }
 
-    region match {
-      case Some(value) => request.params("region", value.toString())
-      case None => {}
+    val regionParam = region match {
+      case Some(value) => Map("region" -> value.toString())
+      case None => Map.empty[String, String]
     }
 
-    avoid match {
-      case Some(value) => request.params("avoid", value.toString())
-      case None => {}
+    val avoidParam = avoid match {
+      case Some(value) => Map("avoid" -> value.toString())
+      case None => Map.empty[String, String]
     }
 
-    trafficModel match {
-      case Some(value) => request.params("traffic_model", value.toString())
-      case None => {}
+    val trafficModelParam = trafficModel match {
+      case Some(value) => Map("traffic_model" -> value.toString())
+      case None => Map.empty[String, String]
     }
 
-    transitMode match {
-      case Some(value) => request.params("transit_mode", value.mkString("|"))
-      case None => {}
+    val transitModeParam = transitMode match {
+      case Some(value) => Map("transit_mode" -> value.mkString("|"))
+      case None => Map.empty[String, String]
     }
 
-    transitRoutingPreference match {
-      case Some(value) => request.params("transit_routing_preference", value.toString())
-      case None => {}
+    val transitRoutingPreferenceParam = transitRoutingPreference match {
+      case Some(value) => Map("transit_routing_preference" -> value.toString())
+      case None => Map.empty[String, String]
     }
 
-    request.makeRequest()
+    val params =
+      ( originsParam ++ destinationsParam
+        ++ unitsParam ++ modeParam ++ languageParam
+        ++ arrivalTimeParam ++ departureTimeParam ++ regionParam
+        ++ avoidParam ++ trafficModelParam ++ transitRoutingPreferenceParam
+      )
+
+    request.makeRequest(params ++ Map("key" -> request.key))
 
   }
 }
 
-case class DistanceMatrixApiRequest(context: Context) extends Request[DistanceMatrix] {
+case class DistanceMatrixApiRequest(context: ContextGoogleMaps) extends Request[DistanceMatrix] {
+
+  val key : String = { context.apiKey }
+
   override def uri(): String = {
     "/distancematrix/json"
   }
 
-  override def key(): String = {
-    context.apiKey
+  override def baseUri: String = {
+    "https://maps.googleapis.com/maps/api"
   }
 
 }

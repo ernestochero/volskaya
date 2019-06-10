@@ -1,6 +1,6 @@
 package repository
 
-import googleMapsService.{Context, DistanceMatrixApi}
+import googleMapsService.{Context, ContextGoogleMaps, DistanceMatrixApi}
 import org.mongodb.scala._
 import models._
 import org.mongodb.scala.bson.ObjectId
@@ -68,7 +68,7 @@ class UserRepository(collection: MongoCollection[User])(implicit ec:ExecutionCon
 
 class UserRepo(repository: UserRepository)(implicit ec: ExecutionContext) {
   // TODO this context should be move to another place
-    val context = Context(apiKey = "AIzaSyCXK3faSiD-RBShPD2TK1z1pRRpRaBdYtg")
+  val context = ContextGoogleMaps(apiKey = "AIzaSyCXK3faSiD-RBShPD2TK1z1pRRpRaBdYtg")
 
   def allUsers = repository.getAllUsers.map( user => user.map(_.asDomain ))
 
