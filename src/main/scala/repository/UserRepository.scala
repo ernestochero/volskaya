@@ -144,9 +144,9 @@ class UserRepo(repository: UserRepository)(implicit ec: ExecutionContext) {
 
   def sendCode(code: String, phoneNumber: String): Future[VolskayaResponse] = {
     val context = ContextFCM(to = "cwcramwMhOo:APA91bG-p6fxc9EDUo8BD5MBk5y4zo04QF1Hi8DQ8frc3z38SmI1a4SGOc0TSkilJeMp_wALf17NRBVxUi51GLk2EYikjXfbRwy-ngjXT9lHkGk-iPCnMqBtW8wLxF2V51_oU38jPAlA",
-        key = "AAAANyt87aU:APA91bFQjPaK7WRgEdzArxyuafUZFWZ0HR6LtFJWuc1q9Y6IrCu1sbgo2dU-7ywZNSIsqEdMkaISbkCs1nSZIaT3pKFwT7YaGsOm4gtHRsqrGMRuT9qzLDnQdt3mwLFBePij08xoAnex")
+        token = "key=AAAANyt87aU:APA91bFQjPaK7WRgEdzArxyuafUZFWZ0HR6LtFJWuc1q9Y6IrCu1sbgo2dU-7ywZNSIsqEdMkaISbkCs1nSZIaT3pKFwT7YaGsOm4gtHRsqrGMRuT9qzLDnQdt3mwLFBePij08xoAnex")
 
-    val sendCodeResult = SendNotificationApi.sendNotificationCode()(context)
+    val sendCodeResult = SendNotificationApi.sendNotificationCode(code, phoneNumber)(context)
     sendCodeResult.flatMap { result =>
         if(result.success == 1) {
           Future.successful(VolskayaSuccessResponse(responseMessage = getSuccessSendcode(fieldId = VerificationCodeId)))

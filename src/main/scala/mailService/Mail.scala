@@ -1,0 +1,5 @@
+package mailService
+
+object Mail {
+
+}
