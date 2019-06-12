@@ -35,11 +35,14 @@ object VolskayaMessages {
   def getSuccessGetMessage(fieldId: FieldId): String = s"The ${fieldId.name} was extracted successfully"
   def getSuccessRegisteredMessage(fieldId: FieldId): String = s"The ${fieldId.name} was registered successfully"
   def getSuccessSendcode(fieldId: FieldId): String = s"The ${fieldId.name} was sent successfully"
+  def getSuccessChecked(fieldId: FieldId): String = s"The ${fieldId.name} was checked successfully"
 
   def getFailedUpdateMessage(fieldId: FieldId): String = s"The ${fieldId.name} was updated unsuccessfully"
   def getFailedLoginMessage(fieldId: FieldId): String = s"The ${fieldId.name} was logged unsuccessfully"
   def getFailedCalculateMessage(fieldId: FieldId): String = s"The ${fieldId.name} was calculate unsuccessfully"
   def getFailedGetMessage(fieldId: FieldId): String = s"The ${fieldId.name} was extracted unsuccessfully"
+  def getFailedChecked(fieldId: FieldId): String = s"The ${fieldId.name} was checked unsuccessfully"
+
 
   def getDefaultErrorMessage(errorMsg:String): String = s"An unsuspected error happened : $errorMsg"
   def getUserNotExistMessage: String = "The User Doesn't Exist"

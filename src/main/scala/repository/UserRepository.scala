@@ -12,6 +12,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import models.VolskayaMessages._
 import org.mongodb.scala.result.UpdateResult
 import akka.event.Logging
+import com.sun.corba.se.spi.ior.ObjectKey
 
 class UserRepository(collection: MongoCollection[User])(implicit ec:ExecutionContext) {
 
@@ -73,6 +74,11 @@ class UserRepository(collection: MongoCollection[User])(implicit ec:ExecutionCon
     val filter = Document("_id" -> _id)
     val update = Document("$set" -> Document("confirmationCode" -> confirmationCode))
     collection.updateOne(filter, update).head()
+  }
+
+  def checkCode(_id: ObjectId, code: String) = {
+    val filter = Document("_id" -> _id, "confirmationCode" -> code)
+    collection.find(filter).head()
   }
 
 }
@@ -167,6 +173,17 @@ class UserRepo(repository: UserRepository)(implicit ec: ExecutionContext) {
       case exception =>
         Future.successful(VolskayaFailedResponse(responseMessage = getDefaultErrorMessage(errorMsg = exception.getMessage)))
     }
+  }
+
+  def checkCode(id: String, code: String) = {
+    repository.checkCode(new ObjectId(id), code).flatMap {
+      case user: User =>
+        Future.successful(VolskayaSuccessResponse(responseMessage = getSuccessChecked(fieldId = VerificationCodeId)))
+      case _ =>
+        Future.successful(VolskayaFailedResponse(responseMessage = getFailedChecked(fieldId = VerificationCodeId)))
+    }.recoverWith{
+        case exception => Future.failed(exception)
+      }
   }
 
 
