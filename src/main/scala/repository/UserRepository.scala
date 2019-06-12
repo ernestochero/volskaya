@@ -164,6 +164,12 @@ class UserRepo(repository: UserRepository)(implicit ec: ExecutionContext) {
     val device = Device(name = "", number = phoneNumber, imei = "")
     val user = User(email = Some(email), password = Some(password), device = Some(device))
     repository.saveUser(user).flatMap { user =>
+      // TODO:  Code generated Random - improbe this part
+      val codeGenerate = "654677"
+      val msgCodeGenerate = s"Tu codigo de verificacion es $codeGenerate "
+
+      val sendResult = sendCode(msgCodeGenerate, phoneNumber)
+      sendResult.foreach(message => s"**** SEND RESULT = ${message.message}")
       Future.successful(VolskayaRegisterResponse(Some(user._id.toHexString),
         VolskayaSuccessResponse(responseMessage = getSuccessRegisteredMessage(models.UserField))))
     }.recoverWith {
