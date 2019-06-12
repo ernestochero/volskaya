@@ -15,10 +15,11 @@ case class UserDomain(id: Option[String],
                       password: Option[String],
                       isAuthenticated: Option[Boolean],
                       orders: Option[List[Order]],
-                      favoriteSites: Option[List[FavoriteSite]]
+                      favoriteSites: Option[List[FavoriteSite]],
+                      confirmationCode: Option[String]
                      ) {
   def asResource = User( id.fold(ObjectId.get()){new ObjectId(_)},
-    device, personalInformation, email, password, isAuthenticated, orders, favoriteSites)
+    device, personalInformation, email, password, isAuthenticated, orders, favoriteSites, confirmationCode)
 }
 
 case class User(_id: ObjectId = new ObjectId(),
@@ -28,7 +29,8 @@ case class User(_id: ObjectId = new ObjectId(),
                 password: Option[String] = None,
                 isAuthenticated: Option[Boolean] = None,
                 orders: Option[List[Order]] = None,
-                favoriteSites: Option[List[FavoriteSite]] = None
+                favoriteSites: Option[List[FavoriteSite]] = None,
+                confirmationCode: Option[String] = None
                ) {
-  def asDomain = UserDomain(Some(_id.toHexString),device, personalInformation, email, password, isAuthenticated, orders, favoriteSites)
+  def asDomain = UserDomain(Some(_id.toHexString),device, personalInformation, email, password, isAuthenticated, orders, favoriteSites, confirmationCode)
 }

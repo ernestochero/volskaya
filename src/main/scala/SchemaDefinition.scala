@@ -97,6 +97,7 @@ object SchemaDefinition {
   val OrdersArg = Argument("orders", OptionInputType(ListInputType(OrderInputType)))
   val RouteArg = Argument("route", RouteInputType)
   val FavoriteSitesArg = Argument("favoriteSites", OptionInputType(ListInputType(FavoriteSiteInputType)))
+  val ConfirmationCodeArg = Argument("confirmationCode", OptionInputType(StringType))
 
   val arguments = List(
     IdArg,
@@ -106,7 +107,8 @@ object SchemaDefinition {
     PasswordArg,
     IsAuthenticatedArg,
     OrdersArg,
-    FavoriteSitesArg
+    FavoriteSitesArg,
+    ConfirmationCodeArg
   )
 
   def buildUserDomain(context:Context[UserRepo, Unit]): UserDomain = {
@@ -118,7 +120,8 @@ object SchemaDefinition {
       context.arg(PasswordArg),
       context.arg(IsAuthenticatedArg),
       context.arg(OrdersArg).map(_.toList),
-      context.arg(FavoriteSitesArg).map(_.toList)
+      context.arg(FavoriteSitesArg).map(_.toList),
+      context.arg(ConfirmationCodeArg)
     )
   }
 

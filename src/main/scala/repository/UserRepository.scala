@@ -1,5 +1,6 @@
 package repository
 
+import akka.actor.ActorSystem
 import googleMapsService.{Context, ContextFCM, ContextGoogleMaps, DistanceMatrixApi}
 import org.mongodb.scala._
 import models._
@@ -10,6 +11,7 @@ import googlefcmservice.SendNotificationApi
 import scala.concurrent.{ExecutionContext, Future}
 import models.VolskayaMessages._
 import org.mongodb.scala.result.UpdateResult
+import akka.event.Logging
 
 class UserRepository(collection: MongoCollection[User])(implicit ec:ExecutionContext) {
 
@@ -65,6 +67,14 @@ class UserRepository(collection: MongoCollection[User])(implicit ec:ExecutionCon
     val update = Document("$push" -> Document("favoriteSites" -> favoriteSiteField))
     collection.updateOne(filter, update).head()
   }
+
+  // TODO: improve this part , maybe stored the confirmationCode on REDIS
+  def saveConfirmationCode(_id: ObjectId, confirmationCode: String) = {
+    val filter = Document("_id" -> _id)
+    val update = Document("$set" -> Document("confirmationCode" -> confirmationCode))
+    collection.updateOne(filter, update).head()
+  }
+
 }
 
 class UserRepo(repository: UserRepository)(implicit ec: ExecutionContext) {
@@ -161,15 +171,29 @@ class UserRepo(repository: UserRepository)(implicit ec: ExecutionContext) {
 
 
   def register(email: String, password: String, phoneNumber: String) = {
+    import scala.util.Random
     val device = Device(name = "", number = phoneNumber, imei = "")
     val user = User(email = Some(email), password = Some(password), device = Some(device))
     repository.saveUser(user).flatMap { user =>
-      // TODO:  Code generated Random - improbe this part
-      val codeGenerate = "654677"
-      val msgCodeGenerate = s"Tu codigo de verificacion es $codeGenerate "
 
-      val sendResult = sendCode(msgCodeGenerate, phoneNumber)
-      sendResult.foreach(message => s"**** SEND RESULT = ${message.message}")
+      val confirmationCode = (1 to 6).foldLeft(""){(c,v) => s"$c${Random.nextInt(10)}"}
+      val msgCodeGenerate = s"Tu codigo de verificacion es $confirmationCode "
+
+      // TODO: Improbe this part with durable Actors
+      (for {
+        saveResult <- repository.saveConfirmationCode(user._id, confirmationCode)
+        sendResult <- sendCode(msgCodeGenerate, phoneNumber)
+      } yield {
+        println(s"Save Confirmation Code Result : {$saveResult.toString} ")
+        print(s"Send Confirmation Code Result : {${sendResult.responseCode}} {${sendResult.responseMessage}} ")
+        // system.log.info("Save Confirmation Code Result : {} ", saveResult.toString)
+        // system.log.info("Send Confirmation Code Result : {} {} ", sendResult.responseCode, sendResult.responseMessage)
+      }).recover{
+        case exception =>
+          println(s"An error occurred {${exception.getMessage}} ")
+          //system.log.error("An error occurred {} ", exception.getMessage)
+      }
+
       Future.successful(VolskayaRegisterResponse(Some(user._id.toHexString),
         VolskayaSuccessResponse(responseMessage = getSuccessRegisteredMessage(models.UserField))))
     }.recoverWith {
