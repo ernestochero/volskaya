@@ -1,0 +1,5 @@
+package user
+
+class UserManager {
+
+}

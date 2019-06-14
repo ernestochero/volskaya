@@ -2,6 +2,32 @@ package models
 
 import org.bson.types.ObjectId
 
+object UserManagementMessages {
+
+  case class SaveUser(user:User)
+
+  case class VerifyLogin(email:String, password: String)
+
+  case class GetUser(id:ObjectId)
+
+  case class GetAllUsers(begin:Int = 0 , limit:Int)
+
+  case class UpdateEmail(id:ObjectId, email:String)
+
+  case class UpdatePassword(id:ObjectId, oldPassword:String, newPassword:String)
+
+  case class UpdatePersonalInformation(id:ObjectId, personalInformation:PersonalInformation)
+
+  case class AddFavoriteSite(id:ObjectId, favoriteSite:FavoriteSite)
+
+  case class SaveConfirmationCode(id:ObjectId, confirmationCode:String)
+
+  case class checkCode(id:ObjectId, code:String)
+
+}
+
+
+
 case class Device(name:String, number:String, imei:String, token: Option[String] = None)
 
 case class PersonalInformation(firstName: String, lastName: String, dni: String)
