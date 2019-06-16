@@ -10,7 +10,7 @@ object UserManagementMessages {
 
   case class GetUser(id:ObjectId)
 
-  case class GetAllUsers(begin:Int = 0 , limit:Int)
+  case class GetAllUsers(limit:Int, offset:Int)
 
   case class UpdateEmail(id:ObjectId, email:String)
 
@@ -22,7 +22,7 @@ object UserManagementMessages {
 
   case class SaveConfirmationCode(id:ObjectId, confirmationCode:String)
 
-  case class checkCode(id:ObjectId, code:String)
+  case class CheckCode(id:ObjectId, code:String)
 
 }
 

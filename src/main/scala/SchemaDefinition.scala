@@ -126,10 +126,16 @@ object SchemaDefinition {
     )
   }
 
+  val LimitArg = Argument("limit", OptionInputType(IntType), defaultValue = 20)
+  val OffsetArg = Argument("offset", OptionInputType(IntType), defaultValue = 0)
+
   val QueryType = ObjectType("Query", fields[UserRepo, Unit](
     Field("allUsers", ListType(UserType),
       description = Some("Returns a list of all available users."),
-      resolve = _.ctx.allUsers
+      arguments = LimitArg :: OffsetArg :: Nil,
+      resolve = context => {
+        context.ctx.allUsers(context.arg(LimitArg), context.arg(OffsetArg))
+      }
     ),
     Field("getUser", VolskayaMessageUserResponseType,
       description = Some("Return a specific User by ID"),
