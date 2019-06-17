@@ -1,6 +1,7 @@
 package models
 
 import org.bson.types.ObjectId
+import sangria.execution.UserFacingError
 
 object UserManagementMessages {
 
@@ -24,6 +25,15 @@ object UserManagementMessages {
 
   case class CheckCode(id:ObjectId, code:String)
 
+}
+
+trait UserStorageResponse
+case class UserSuccessResponse(userId: String) extends UserStorageResponse
+
+object UserManagementExceptions {
+  case class UserNotFoundException(message:String) extends Exception with UserFacingError {
+    override def getMessage: String = message
+  }
 }
 
 

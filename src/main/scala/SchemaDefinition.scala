@@ -5,6 +5,7 @@ import repository.UserRepo
 import sangria.schema._
 import sangria.marshalling.playJson._
 import sangria.macros.derive.{InputObjectTypeName, deriveInputObjectType, deriveObjectType}
+import user.{UserManagerAPI}
 object SchemaDefinition {
 
   /* type from classes */
@@ -129,12 +130,12 @@ object SchemaDefinition {
   val LimitArg = Argument("limit", OptionInputType(IntType), defaultValue = 20)
   val OffsetArg = Argument("offset", OptionInputType(IntType), defaultValue = 0)
 
-  val QueryType = ObjectType("Query", fields[UserRepo, Unit](
+  val QueryType = ObjectType("Query", fields[UserManagerAPI, Unit](
     Field("allUsers", ListType(UserType),
       description = Some("Returns a list of all available users."),
       arguments = LimitArg :: OffsetArg :: Nil,
       resolve = context => {
-        context.ctx.allUsers(context.arg(LimitArg), context.arg(OffsetArg))
+        context.ctx.getAllUsers(context.arg(LimitArg), context.arg(OffsetArg))
       }
     ),
     Field("getUser", VolskayaMessageUserResponseType,
@@ -143,7 +144,7 @@ object SchemaDefinition {
       resolve = context => {
         context.ctx.getUser(context.arg("id"))
       }
-    ),
+    )/*,
 
     Field("getPrice", VolskayaMessagePriceResponseType,
       description = Some("Return a price of one Route"),
@@ -169,11 +170,11 @@ object SchemaDefinition {
       resolve = context => {
         context.ctx.checkCode(context.arg("id"), context.arg("code"))
       }
-    )
+    )*/
   )
   )
 
-  val MutationType = ObjectType("Mutation", fields[UserRepo, Unit](
+/*  val MutationType = ObjectType("Mutation", fields[UserRepo, Unit](
     Field("addUser", UserType,
       arguments = arguments,
       resolve = context => {
@@ -206,7 +207,7 @@ object SchemaDefinition {
       }
     )
    )
-  )
+  )*/
 
-  val UserSchema = Schema(QueryType, Some(MutationType))
+  val UserSchema = Schema(QueryType)
 }
