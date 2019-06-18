@@ -2,22 +2,21 @@ package user
 
 import java.util.concurrent.TimeUnit
 
-import akka.actor.Status.Failure
 import akka.pattern.ask
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Props}
 import akka.util.Timeout
 import googleMapsService.{ContextFCM, ContextGoogleMaps}
 import models.UserManagementExceptions.UserNotFoundException
-import models.{User, UserDomain}
+import models.{PasswordField, User, UserDomain}
 
 import scala.concurrent.duration.Duration
 import models.UserManagementMessages._
-import models.VolskayaMessages.{VolskayaGetUserResponse, VolskayaSuccessResponse, getSuccessGetMessage}
-import mongodb.Mongo
+import models.VolskayaMessages._
 import org.mongodb.scala.MongoCollection
 import org.mongodb.scala.bson.ObjectId
+import org.mongodb.scala.result.UpdateResult
 
-import scala.concurrent.{Await, Future}
+import scala.concurrent.Future
 
 case class UserManagerAPI(system: ActorSystem) {
 
@@ -33,13 +32,27 @@ case class UserManagerAPI(system: ActorSystem) {
   }
 
   def getUser(id: String): Future[VolskayaGetUserResponse] = {
-    val response = (userManagementActor ? GetUser(new ObjectId(id))).flatMap {
-      case user:User =>
+    (userManagementActor ? GetUser(new ObjectId(id))).flatMap {
+      case Some(user:User) =>
         Future.successful(VolskayaGetUserResponse(Some(user.asDomain), VolskayaSuccessResponse(responseMessage = getSuccessGetMessage(models.UserField))))
+      case None =>
+        Future.failed(UserNotFoundException(getUserNotExistMessage))
     }.recoverWith {
-      case ex => Future.failed(UserNotFoundException(ex.getMessage))
+      case ex =>
+        val failedResponse = VolskayaFailedResponse(responseMessage = getDefaultErrorMessage(ex.getMessage))
+        Future.successful(VolskayaGetUserResponse(None, failedResponse))
     }
-    response
+  }
+
+  def updatePassword(id: String, oldPassword: String, newPassword: String): Future[VolskayaResponse] = {
+    (userManagementActor ? UpdatePassword(new ObjectId(id), oldPassword, newPassword)).flatMap {
+      case res:UpdateResult if (res.getMatchedCount == 1) && res.wasAcknowledged() =>
+        Future.successful(VolskayaSuccessResponse(responseMessage = getSuccessUpdateMessage(fieldId = PasswordField)))
+      case _ =>
+        Future.successful(VolskayaFailedResponse(responseMessage = getFailedUpdateMessage(fieldId = PasswordField)))
+    }.recoverWith {
+      case exception => Future.successful(VolskayaFailedResponse(responseMessage = getDefaultErrorMessage(errorMsg = exception.getMessage)))
+    }
   }
 
 }

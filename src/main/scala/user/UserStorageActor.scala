@@ -12,17 +12,21 @@ import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration.Duration
 import akka.pattern.pipe
 import models.UserManagementExceptions.UserNotFoundException
-
+import models.VolskayaMessages._
 case class UserStorageActorAPI(system: ActorSystem) {
   def userStorageActor = system.actorSelection("/user/userStorageActor")
   import system.dispatcher
   implicit val timeout = Timeout(Duration.create(30, TimeUnit.SECONDS))
-
 }
 
 class UserStorageActor(collection: MongoCollection[User]) extends Actor with ActorLogging  {
   implicit val ec: ExecutionContext = context.system.dispatcher
   implicit val timeout = Timeout(Duration.create(30, TimeUnit.SECONDS))
+
+  val f = (t:User) => t match {
+    case user: User => Future.successful(user)
+    case _ => Future.failed(UserNotFoundException(getUserNotExistMessage))
+  }
 
   override def receive: Receive = {
     case SaveUser(user) =>
@@ -35,11 +39,10 @@ class UserStorageActor(collection: MongoCollection[User]) extends Actor with Act
 
     case GetUser(id) =>
       val filter = Document("_id" -> id)
-      val result = collection.find(filter).first().head().flatMap {
-        case user: User => Future.successful(user)
-        case _ => Future.failed(UserNotFoundException("The User Doesn't Exist"))
-      }
-      val res = Await.result(result, Duration.Inf)
+      val result = collection.find(filter)
+          .toFuture()
+          .recoverWith {  case e => Future.failed(e) }
+          .map(_.headOption)
       result.pipeTo(sender())
 
     case VerifyLogin(email, password) =>

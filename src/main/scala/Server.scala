@@ -23,7 +23,7 @@ import scala.util.{Failure, Success}
 import GraphQLRequestUnmarshaller._
 import googleMapsService.{ContextFCM, ContextGoogleMaps}
 import mongodb.Mongo
-import repository.{UserRepo, UserRepository}
+import repository.{UserRepository}
 import sangria.slowlog.SlowLog
 import user.{UserManager, UserManagerAPI}
 

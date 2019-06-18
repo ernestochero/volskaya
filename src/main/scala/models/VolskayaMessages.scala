@@ -45,7 +45,7 @@ object VolskayaMessages {
 
 
   def getDefaultErrorMessage(errorMsg:String): String = s"An unsuspected error happened : $errorMsg"
-  def getUserNotExistMessage: String = "The User Doesn't Exist"
+  def getUserNotExistMessage: String = "User Not Found"
 
   case class VolskayaIncorrectParameters(responseCode: String = "11", responseMessage: String = "Incorrect Parameters") extends VolskayaResponse
 

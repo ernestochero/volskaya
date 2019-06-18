@@ -174,20 +174,20 @@ object SchemaDefinition {
   )
   )
 
-/*  val MutationType = ObjectType("Mutation", fields[UserRepo, Unit](
-    Field("addUser", UserType,
-      arguments = arguments,
-      resolve = context => {
-        val repo = context.ctx
-        repo.saveUser(buildUserDomain(context))
-      }
-    ),
+  val MutationType = ObjectType("Mutation", fields[UserManagerAPI, Unit](
     Field("updatePassword",VolskayaMessageResponseType,
       arguments = Argument("id", StringType)
         :: Argument("oldPassword", StringType)
         :: Argument("newPassword", StringType) :: Nil,
       resolve = context => {
         context.ctx.updatePassword(context.arg("id"), context.arg("oldPassword"), context.arg("newPassword"))
+      }
+    )/*,
+    Field("addUser", UserType,
+      arguments = arguments,
+      resolve = context => {
+        val repo = context.ctx
+        repo.saveUser(buildUserDomain(context))
       }
     ),
     Field("register", VolskayaMessageRegisterResponseType,
@@ -205,9 +205,9 @@ object SchemaDefinition {
       resolve = context => {
         context.ctx.addFavoriteSite(context.arg("id"), context.arg("favoriteSite"))
       }
-    )
+    )*/
    )
-  )*/
+  )
 
-  val UserSchema = Schema(QueryType)
+  val UserSchema = Schema(QueryType, Some(MutationType))
 }
