@@ -34,6 +34,7 @@ object VolskayaMessages {
   def getSuccessCalculateMessage(fieldId: FieldId): String = s"The ${fieldId.name} was calculate successfully"
   def getSuccessGetMessage(fieldId: FieldId): String = s"The ${fieldId.name} was extracted successfully"
   def getSuccessRegisteredMessage(fieldId: FieldId): String = s"The ${fieldId.name} was registered successfully"
+  def getSuccessSave(fieldId: FieldId): String = s"The ${fieldId.name} was saved successfully"
   def getSuccessSendCode(fieldId: FieldId): String = s"The ${fieldId.name} was sent successfully"
   def getSuccessChecked(fieldId: FieldId): String = s"The ${fieldId.name} was checked successfully"
 
@@ -42,10 +43,13 @@ object VolskayaMessages {
   def getFailedCalculateMessage(fieldId: FieldId): String = s"The ${fieldId.name} was calculate unsuccessfully"
   def getFailedGetMessage(fieldId: FieldId): String = s"The ${fieldId.name} was extracted unsuccessfully"
   def getFailedChecked(fieldId: FieldId): String = s"The ${fieldId.name} was checked unsuccessfully"
-
+  def getFailedSave(fieldId: FieldId): String = s"The ${fieldId.name} was saved successfully"
+  def getFailedSendCode(fieldId: FieldId): String = s"The ${fieldId.name} was not sent successfully"
 
   def getDefaultErrorMessage(errorMsg:String): String = s"An unsuspected error happened : $errorMsg"
   def getUserNotExistMessage: String = "User Not Found"
+  def getMatchPatternNotFoundMessage :String = "Match Pattern Not Found"
+  def getFailedSendVerificationCode: String = "Failed to Sent Verification Code"
 
   case class VolskayaIncorrectParameters(responseCode: String = "11", responseMessage: String = "Incorrect Parameters") extends VolskayaResponse
 

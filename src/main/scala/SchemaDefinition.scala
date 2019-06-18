@@ -150,6 +150,12 @@ object SchemaDefinition {
       resolve = context => {
         context.ctx.verifyLogin(context.arg("email"), context.arg("password"))
       }
+    ),
+    Field("checkCode", VolskayaMessageResponseType,
+      arguments = Argument("id", StringType) :: Argument("code", StringType) :: Nil,
+      resolve = context => {
+        context.ctx.checkCode(context.arg("id"), context.arg("code"))
+      }
     )
     /*,
 
@@ -165,12 +171,6 @@ object SchemaDefinition {
       resolve = context => {
         context.ctx.sendCode(context.arg("code"), context.arg("phoneNumber"))
       }
-    ),
-    Field("checkCode", VolskayaMessageResponseType,
-      arguments = Argument("id", StringType) :: Argument("code", StringType) :: Nil,
-      resolve = context => {
-        context.ctx.checkCode(context.arg("id"), context.arg("code"))
-      }
     )*/
   )
   )
@@ -183,21 +183,6 @@ object SchemaDefinition {
       resolve = context => {
         context.ctx.updatePassword(context.arg("id"), context.arg("oldPassword"), context.arg("newPassword"))
       }
-    )/*,
-    Field("addUser", UserType,
-      arguments = arguments,
-      resolve = context => {
-        val repo = context.ctx
-        repo.saveUser(buildUserDomain(context))
-      }
-    ),
-    Field("register", VolskayaMessageRegisterResponseType,
-      arguments = Argument("email", StringType)
-        :: Argument("password", StringType)
-        :: Argument("phoneNumber", StringType) :: Nil,
-      resolve = context => {
-        context.ctx.register(context.arg("email"), context.arg("password"), context.arg("phoneNumber"))
-      }
     ),
     Field("addFavoriteSite", VolskayaMessageResponseType,
       arguments = Argument("id", StringType)
@@ -205,6 +190,21 @@ object SchemaDefinition {
         :: Nil,
       resolve = context => {
         context.ctx.addFavoriteSite(context.arg("id"), context.arg("favoriteSite"))
+      }
+    ),
+    Field("register", VolskayaMessageUserResponseType,
+      arguments = Argument("email", StringType)
+        :: Argument("password", StringType)
+        :: Argument("phoneNumber", StringType) :: Nil,
+      resolve = context => {
+        context.ctx.registerUser(context.arg("email"), context.arg("password"), context.arg("phoneNumber"))
+      }
+    )/*,
+    Field("addUser", UserType,
+      arguments = arguments,
+      resolve = context => {
+        val repo = context.ctx
+        repo.saveUser(buildUserDomain(context))
       }
     )*/
    )

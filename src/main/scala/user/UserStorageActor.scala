@@ -25,7 +25,10 @@ class UserStorageActor(collection: MongoCollection[User]) extends Actor with Act
 
   override def receive: Receive = {
     case SaveUser(user) =>
-      val result =  collection.insertOne(user).head().map {_ => user }
+      val result =  collection.insertOne(user)
+          .toFuture()
+          .recoverWith { case e => Future.failed(e) }
+          .map(_ => user)
       result.pipeTo(sender())
 
     case GetAllUsers(limit, offset) =>
@@ -81,18 +84,25 @@ class UserStorageActor(collection: MongoCollection[User]) extends Actor with Act
       )
       val filter = Document("_id" -> id)
       val update = Document("$push" -> Document("favoriteSites" -> favoriteSiteField))
-      val result = collection.updateOne(filter, update).head()
+      val result = collection.updateOne(filter, update)
+          .toFuture()
+          .recoverWith { case e => Future.failed(e) }
       result.pipeTo(sender())
 
-    case SaveConfirmationCode(id, confirmationCode) =>
+    case SaveVerificationCode(id, verificationCode) =>
       val filter = Document("_id" -> id)
-      val update = Document("$set" -> Document("confirmationCode" -> confirmationCode))
-      val result = collection.updateOne(filter, update).head()
+      val update = Document("$set" -> Document("confirmationCode" -> verificationCode))
+      val result = collection.updateOne(filter, update)
+          .toFuture()
+          .recoverWith { case e => Future.failed(e) }
       result.pipeTo(sender())
 
     case CheckCode(id, code) =>
       val filter = Document("_id" -> id, "confirmationCode" -> code)
-      val result = collection.find(filter).head()
+      val result = collection.find(filter)
+          .toFuture()
+          .recoverWith{ case e => Future.failed(e) }
+          .map(_.headOption.nonEmpty )
       result.pipeTo(sender())
   }
 

@@ -21,9 +21,11 @@ object UserManagementMessages {
 
   case class AddFavoriteSite(id:ObjectId, favoriteSite:FavoriteSite)
 
-  case class SaveConfirmationCode(id:ObjectId, confirmationCode:String)
+  case class SaveVerificationCode(id:ObjectId, verificationCode:String)
 
   case class CheckCode(id:ObjectId, code:String)
+
+  case class SendVerificationCode(verificationCode: String, phoneNumber: String)
 
 }
 
@@ -34,6 +36,15 @@ object UserManagementExceptions {
   case class UserNotFoundException(message:String) extends Exception with UserFacingError {
     override def getMessage: String = message
   }
+
+  case class MatchPatternNotFoundException(message: String) extends Exception with UserFacingError {
+    override def getMessage: String = message
+  }
+
+  case class SendVerificationCodeException(message: String) extends Exception with UserFacingError {
+    override def getMessage: String = message
+  }
+
 }
 
 

@@ -3,7 +3,7 @@ import sangria.execution.{ErrorWithResolver, Executor, QueryAnalysisError}
 import sangria.parser.{QueryParser, SyntaxError}
 import sangria.parser.DeliveryScheme.Try
 import sangria.marshalling.circe._
-import akka.actor.{Actor, ActorSystem, Props}
+import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.Directives._
@@ -17,20 +17,16 @@ import io.circe.parser._
 import com.typesafe.config.ConfigFactory
 
 import scala.util.control.NonFatal
-import sangria.execution.deferred.DeferredResolver
 
 import scala.util.{Failure, Success}
 import GraphQLRequestUnmarshaller._
-import googleMapsService.{ContextFCM, ContextGoogleMaps}
 import mongodb.Mongo
-import repository.{UserRepository}
+import repository.UserRepository
 import sangria.slowlog.SlowLog
-import user.{UserManager, UserManagerAPI}
-
+import user.UserManagerAPI
+import volskayaSystem.VolskayaActorSystem._
 
 object Server extends App with CorsSupport {
-  implicit val system = ActorSystem("sangria-server")
-  implicit val materializer = ActorMaterializer()
 
   import system.dispatcher
 
@@ -38,10 +34,7 @@ object Server extends App with CorsSupport {
   val config  = ConfigFactory.load()
   val host = config.getString("http.host")
   val port = config.getInt("http.port")
-  val googleMapsContext = ContextGoogleMaps(apiKey = "AIzaSyCXK3faSiD-RBShPD2TK1z1pRRpRaBdYtg")
-  val fcmContext = ContextFCM(to = "cwcramwMhOo:APA91bG-p6fxc9EDUo8BD5MBk5y4zo04QF1Hi8DQ8frc3z38SmI1a4SGOc0TSkilJeMp_wALf17NRBVxUi51GLk2EYikjXfbRwy-ngjXT9lHkGk-iPCnMqBtW8wLxF2V51_oU38jPAlA",
-    token = "key=AAAANyt87aU:APA91bFQjPaK7WRgEdzArxyuafUZFWZ0HR6LtFJWuc1q9Y6IrCu1sbgo2dU-7ywZNSIsqEdMkaISbkCs1nSZIaT3pKFwT7YaGsOm4gtHRsqrGMRuT9qzLDnQdt3mwLFBePij08xoAnex")
-  val userManagementActor = system.actorOf(Props(classOf[UserManager],Mongo.usersCollection, googleMapsContext, fcmContext), "userManagementActor")
+
 
   def executeGraphQL(query: Document, operationName: Option[String], variables: Option[Json], tracing: Boolean) = {
     complete(Executor.execute(SchemaDefinition.UserSchema, query, UserManagerAPI(system),
