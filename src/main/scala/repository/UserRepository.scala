@@ -8,11 +8,13 @@ import org.mongodb.scala.bson.ObjectId
 import googleMapsService.model.{Distance, DistanceMatrix, Units}
 import googlefcmservice.SendNotificationApi
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{Await, ExecutionContext, Future}
 import models.VolskayaMessages._
 import org.mongodb.scala.result.UpdateResult
 import akka.event.Logging
 import com.sun.corba.se.spi.ior.ObjectKey
+
+import scala.concurrent.duration.Duration
 
 class UserRepository(collection: MongoCollection[User])(implicit ec:ExecutionContext) {
 
@@ -132,20 +134,23 @@ class UserRepo(repository: UserRepository)(implicit ec: ExecutionContext) {
 
     val distanceMatrix = DistanceMatrixApi.getDistanceMatrix(origins, destinations, units = Some(Units.metric))(context)
 
-    distanceMatrix.foreach(println(_))
     // TODO implement a better solution for this part
     distanceMatrix.flatMap {
       case dm:DistanceMatrix if dm.status == "OK" =>
-        val price = for {
+        val result = for {
           row <- dm.rows
           element <- row.elements
         } yield {
-          calculateByDistance(element.distance.value)
+          (calculateByDistance(element.distance.value), element.distance.value)
         }
-        Future.successful(VolskayaGetPriceResponse(price.headOption, VolskayaSuccessResponse(responseMessage = getSuccessCalculateMessage(models.PriceFieldId))))
-      case _ => Future.successful(VolskayaGetPriceResponse(None, VolskayaFailedResponse(responseMessage = getFailedCalculateMessage(models.PriceFieldId))))
+
+        val price = result.map(_._1).headOption
+        val distance = result.map(_._2).headOption
+
+        Future.successful(VolskayaGetPriceResponse(price, distance, VolskayaSuccessResponse(responseMessage = getSuccessCalculateMessage(models.PriceFieldId))))
+      case _ => Future.successful(VolskayaGetPriceResponse(None, None, VolskayaFailedResponse(responseMessage = getFailedCalculateMessage(models.PriceFieldId))))
     }.recoverWith {
-      case exception => Future.successful(VolskayaGetPriceResponse(None, VolskayaFailedResponse(responseMessage = getDefaultErrorMessage(errorMsg = exception.getMessage))))
+      case exception => Future.successful(VolskayaGetPriceResponse(None, None, VolskayaFailedResponse(responseMessage = getDefaultErrorMessage(errorMsg = exception.getMessage))))
     }
   }
 
@@ -165,7 +170,7 @@ class UserRepo(repository: UserRepository)(implicit ec: ExecutionContext) {
     val sendCodeResult = SendNotificationApi.sendNotificationCode(code, phoneNumber)(context)
     sendCodeResult.flatMap { result =>
         if(result.success == 1) {
-          Future.successful(VolskayaSuccessResponse(responseMessage = getSuccessSendcode(fieldId = VerificationCodeId)))
+          Future.successful(VolskayaSuccessResponse(responseMessage = getSuccessSendCode(fieldId = VerificationCodeId)))
         } else {
           Future.successful(VolskayaFailedResponse(responseMessage = getDefaultErrorMessage(errorMsg = s" Failure = ${result.failure}")))
         }

@@ -104,7 +104,7 @@ object DistanceMatrixApi extends JsonSupport {
       ( originsParam ++ destinationsParam
         ++ unitsParam ++ modeParam ++ languageParam
         ++ arrivalTimeParam ++ departureTimeParam ++ regionParam
-        ++ avoidParam ++ trafficModelParam ++ transitRoutingPreferenceParam
+        ++ avoidParam ++ trafficModelParam ++ transitModeParam ++transitRoutingPreferenceParam
       )
 
     request.makeRequest(params ++ Map("key" -> request.key))

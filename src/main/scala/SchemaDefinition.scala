@@ -66,6 +66,7 @@ object SchemaDefinition {
   implicit val VolskayaMessagePriceResponseType = ObjectType("volskayaMessagePriceOutputType", "Format to return getPrice request",
     fields[Unit, VolskayaGetPriceResponse](
       Field("price", OptionType(FloatType), resolve = _.value.price),
+      Field("distance", OptionType(IntType), resolve = _.value.distance),
       Field("volskayaResponse", VolskayaMessageResponseType, resolve = _.value.volskayaResponse)
     ))
 

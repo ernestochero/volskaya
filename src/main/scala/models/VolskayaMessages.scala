@@ -34,7 +34,7 @@ object VolskayaMessages {
   def getSuccessCalculateMessage(fieldId: FieldId): String = s"The ${fieldId.name} was calculate successfully"
   def getSuccessGetMessage(fieldId: FieldId): String = s"The ${fieldId.name} was extracted successfully"
   def getSuccessRegisteredMessage(fieldId: FieldId): String = s"The ${fieldId.name} was registered successfully"
-  def getSuccessSendcode(fieldId: FieldId): String = s"The ${fieldId.name} was sent successfully"
+  def getSuccessSendCode(fieldId: FieldId): String = s"The ${fieldId.name} was sent successfully"
   def getSuccessChecked(fieldId: FieldId): String = s"The ${fieldId.name} was checked successfully"
 
   def getFailedUpdateMessage(fieldId: FieldId): String = s"The ${fieldId.name} was updated unsuccessfully"
@@ -53,7 +53,7 @@ object VolskayaMessages {
 
   case class VolskayaFailedResponse(responseCode: String = "01", responseMessage: String) extends VolskayaResponse
 
-  case class VolskayaGetPriceResponse(price: Option[Double], volskayaResponse: VolskayaResponse)
+  case class VolskayaGetPriceResponse(price: Option[Double], distance: Option[Int], volskayaResponse: VolskayaResponse)
 
   case class VolskayaGetUserResponse(userDomain: Option[UserDomain], volskayaResponse: VolskayaResponse)
 
