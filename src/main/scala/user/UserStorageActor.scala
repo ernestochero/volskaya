@@ -23,11 +23,6 @@ class UserStorageActor(collection: MongoCollection[User]) extends Actor with Act
   implicit val ec: ExecutionContext = context.system.dispatcher
   implicit val timeout = Timeout(Duration.create(30, TimeUnit.SECONDS))
 
-  val f = (t:User) => t match {
-    case user: User => Future.successful(user)
-    case _ => Future.failed(UserNotFoundException(getUserNotExistMessage))
-  }
-
   override def receive: Receive = {
     case SaveUser(user) =>
       val result =  collection.insertOne(user).head().map {_ => user }
@@ -47,7 +42,10 @@ class UserStorageActor(collection: MongoCollection[User]) extends Actor with Act
 
     case VerifyLogin(email, password) =>
       val filter = Document("email" -> email, "password" -> password)
-      val result = collection.find(filter).first().head()
+      val result = collection.find(filter)
+          .toFuture()
+          .recoverWith{ case e => Future.failed(e) }
+          .map(_.headOption)
       result.pipeTo(sender())
 
     case UpdateEmail(id, email) =>
@@ -59,7 +57,9 @@ class UserStorageActor(collection: MongoCollection[User]) extends Actor with Act
     case UpdatePassword(id, oldPassword, newPassword) =>
       val filter = Document("_id" -> id, "password" -> oldPassword)
       val update = Document("$set" -> Document("password" -> newPassword))
-      val result = collection.updateOne(filter, update).head()
+      val result = collection.updateOne(filter, update)
+          .toFuture()
+          .recoverWith { case e => Future.failed(e) }
       result.pipeTo(sender())
 
     case UpdatePersonalInformation(id, personalInformation) =>

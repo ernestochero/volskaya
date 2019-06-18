@@ -144,19 +144,20 @@ object SchemaDefinition {
       resolve = context => {
         context.ctx.getUser(context.arg("id"))
       }
-    )/*,
+    ),
+    Field("login",VolskayaMessageUserResponseType,
+      arguments = Argument("email", StringType) :: Argument("password", StringType) :: Nil,
+      resolve = context => {
+        context.ctx.verifyLogin(context.arg("email"), context.arg("password"))
+      }
+    )
+    /*,
 
     Field("getPrice", VolskayaMessagePriceResponseType,
       description = Some("Return a price of one Route"),
       arguments = Argument("coordinateStart", CoordinateInputType) :: Argument("coordinateFinish", CoordinateInputType) :: Nil,
       resolve = context => {
         context.ctx.calculatePriceRoute(context.arg("coordinateStart"), context.arg("coordinateFinish"))
-      }
-    ),
-    Field("login",VolskayaMessageLoginResponseType,
-      arguments = Argument("email", StringType) :: Argument("password", StringType) :: Nil,
-      resolve = context => {
-        context.ctx.login(context.arg("email"), context.arg("password"))
       }
     ),
     Field("sendCode", VolskayaMessageResponseType,

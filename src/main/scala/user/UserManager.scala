@@ -49,11 +49,26 @@ case class UserManagerAPI(system: ActorSystem) {
       case res:UpdateResult if (res.getMatchedCount == 1) && res.wasAcknowledged() =>
         Future.successful(VolskayaSuccessResponse(responseMessage = getSuccessUpdateMessage(fieldId = PasswordField)))
       case _ =>
-        Future.successful(VolskayaFailedResponse(responseMessage = getFailedUpdateMessage(fieldId = PasswordField)))
+        Future.failed(UserNotFoundException(getUserNotExistMessage))
     }.recoverWith {
-      case exception => Future.successful(VolskayaFailedResponse(responseMessage = getDefaultErrorMessage(errorMsg = exception.getMessage)))
+      case exception =>
+        Future.successful(VolskayaFailedResponse(responseMessage = getDefaultErrorMessage(errorMsg = exception.getMessage)))
     }
   }
+
+  def verifyLogin(email:String, password: String): Future[VolskayaGetUserResponse] = {
+    (userManagementActor ? VerifyLogin(email, password)).flatMap {
+      case Some(user: User) =>
+        Future.successful(VolskayaGetUserResponse(Some(user.asDomain),VolskayaSuccessResponse(responseMessage = getSuccessLoginMessage(models.UserField))))
+      case None =>
+        Future.failed(UserNotFoundException(getUserNotExistMessage))
+    }.recoverWith {
+      case ex =>
+        val failedResponse = VolskayaFailedResponse(responseMessage = getDefaultErrorMessage(ex.getMessage))
+        Future.successful(VolskayaGetUserResponse(None, failedResponse))
+    }
+  }
+
 
 }
 
