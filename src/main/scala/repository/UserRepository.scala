@@ -25,7 +25,7 @@ class UserRepository(collection: MongoCollection[User])(implicit ec:ExecutionCon
       .map { _ => user}
   }
 
-  def getAllUsers: Future[Seq[User]] = { collection.find().toFuture() }
+  def getAllUsers(limit: Int, offset:Int): Future[Seq[User]] = { collection.find().skip(offset).limit(limit).toFuture()}
 
   def verifyLogin(email:String, password:String): Future[User] = {
     val filter = Document("email" -> email, "password" -> password)
@@ -89,7 +89,7 @@ class UserRepo(repository: UserRepository)(implicit ec: ExecutionContext) {
   // TODO this context should be move to another place
   val context = ContextGoogleMaps(apiKey = "AIzaSyCXK3faSiD-RBShPD2TK1z1pRRpRaBdYtg")
 
-  def allUsers = repository.getAllUsers.map( user => user.map(_.asDomain ))
+  def allUsers(limit:Int, offset:Int) = repository.getAllUsers(limit, offset).map( user => user.map(_.asDomain ))
 
   def saveUser(userDomain: UserDomain) = {
     repository.saveUser(userDomain.asResource).map(_.asDomain)

@@ -5,6 +5,7 @@ import repository.UserRepo
 import sangria.schema._
 import sangria.marshalling.playJson._
 import sangria.macros.derive.{InputObjectTypeName, deriveInputObjectType, deriveObjectType}
+import user.{UserManagerAPI}
 object SchemaDefinition {
 
   /* type from classes */
@@ -126,10 +127,16 @@ object SchemaDefinition {
     )
   }
 
-  val QueryType = ObjectType("Query", fields[UserRepo, Unit](
+  val LimitArg = Argument("limit", OptionInputType(IntType), defaultValue = 20)
+  val OffsetArg = Argument("offset", OptionInputType(IntType), defaultValue = 0)
+
+  val QueryType = ObjectType("Query", fields[UserManagerAPI, Unit](
     Field("allUsers", ListType(UserType),
       description = Some("Returns a list of all available users."),
-      resolve = _.ctx.allUsers
+      arguments = LimitArg :: OffsetArg :: Nil,
+      resolve = context => {
+        context.ctx.getAllUsers(context.arg(LimitArg), context.arg(OffsetArg))
+      }
     ),
     Field("getUser", VolskayaMessageUserResponseType,
       description = Some("Return a specific User by ID"),
@@ -138,24 +145,10 @@ object SchemaDefinition {
         context.ctx.getUser(context.arg("id"))
       }
     ),
-
-    Field("getPrice", VolskayaMessagePriceResponseType,
-      description = Some("Return a price of one Route"),
-      arguments = Argument("coordinateStart", CoordinateInputType) :: Argument("coordinateFinish", CoordinateInputType) :: Nil,
-      resolve = context => {
-        context.ctx.calculatePriceRoute(context.arg("coordinateStart"), context.arg("coordinateFinish"))
-      }
-    ),
-    Field("login",VolskayaMessageLoginResponseType,
+    Field("login",VolskayaMessageUserResponseType,
       arguments = Argument("email", StringType) :: Argument("password", StringType) :: Nil,
       resolve = context => {
-        context.ctx.login(context.arg("email"), context.arg("password"))
-      }
-    ),
-    Field("sendCode", VolskayaMessageResponseType,
-      arguments = Argument("code", StringType) :: Argument("phoneNumber", StringType) :: Nil,
-      resolve = context => {
-        context.ctx.sendCode(context.arg("code"), context.arg("phoneNumber"))
+        context.ctx.verifyLogin(context.arg("email"), context.arg("password"))
       }
     ),
     Field("checkCode", VolskayaMessageResponseType,
@@ -163,32 +156,31 @@ object SchemaDefinition {
       resolve = context => {
         context.ctx.checkCode(context.arg("id"), context.arg("code"))
       }
+    ),
+    Field("getPrice", VolskayaMessagePriceResponseType,
+      description = Some("Return a price of one Route"),
+      arguments = Argument("coordinateStart", CoordinateInputType) :: Argument("coordinateFinish", CoordinateInputType) :: Nil,
+      resolve = context => {
+        context.ctx.calculatePriceRoute(context.arg("coordinateStart"), context.arg("coordinateFinish"))
+      }
     )
+    /*,
+    Field("sendCode", VolskayaMessageResponseType,
+      arguments = Argument("code", StringType) :: Argument("phoneNumber", StringType) :: Nil,
+      resolve = context => {
+        context.ctx.sendCode(context.arg("code"), context.arg("phoneNumber"))
+      }
+    )*/
   )
   )
 
-  val MutationType = ObjectType("Mutation", fields[UserRepo, Unit](
-    Field("addUser", UserType,
-      arguments = arguments,
-      resolve = context => {
-        val repo = context.ctx
-        repo.saveUser(buildUserDomain(context))
-      }
-    ),
+  val MutationType = ObjectType("Mutation", fields[UserManagerAPI, Unit](
     Field("updatePassword",VolskayaMessageResponseType,
       arguments = Argument("id", StringType)
         :: Argument("oldPassword", StringType)
         :: Argument("newPassword", StringType) :: Nil,
       resolve = context => {
         context.ctx.updatePassword(context.arg("id"), context.arg("oldPassword"), context.arg("newPassword"))
-      }
-    ),
-    Field("register", VolskayaMessageRegisterResponseType,
-      arguments = Argument("email", StringType)
-        :: Argument("password", StringType)
-        :: Argument("phoneNumber", StringType) :: Nil,
-      resolve = context => {
-        context.ctx.register(context.arg("email"), context.arg("password"), context.arg("phoneNumber"))
       }
     ),
     Field("addFavoriteSite", VolskayaMessageResponseType,
@@ -198,7 +190,22 @@ object SchemaDefinition {
       resolve = context => {
         context.ctx.addFavoriteSite(context.arg("id"), context.arg("favoriteSite"))
       }
-    )
+    ),
+    Field("register", VolskayaMessageUserResponseType,
+      arguments = Argument("email", StringType)
+        :: Argument("password", StringType)
+        :: Argument("phoneNumber", StringType) :: Nil,
+      resolve = context => {
+        context.ctx.registerUser(context.arg("email"), context.arg("password"), context.arg("phoneNumber"))
+      }
+    )/*,
+    Field("addUser", UserType,
+      arguments = arguments,
+      resolve = context => {
+        val repo = context.ctx
+        repo.saveUser(buildUserDomain(context))
+      }
+    )*/
    )
   )
 

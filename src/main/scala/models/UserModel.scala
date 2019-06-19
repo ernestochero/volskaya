@@ -1,6 +1,59 @@
 package models
 
 import org.bson.types.ObjectId
+import sangria.execution.UserFacingError
+
+object UserManagementMessages {
+
+  case class SaveUser(user:User)
+
+  case class VerifyLogin(email:String, password: String)
+
+  case class GetUser(id:ObjectId)
+
+  case class GetAllUsers(limit:Int, offset:Int)
+
+  case class UpdateEmail(id:ObjectId, email:String)
+
+  case class UpdatePassword(id:ObjectId, oldPassword:String, newPassword:String)
+
+  case class UpdatePersonalInformation(id:ObjectId, personalInformation:PersonalInformation)
+
+  case class AddFavoriteSite(id:ObjectId, favoriteSite:FavoriteSite)
+
+  case class SaveVerificationCode(id:ObjectId, verificationCode:String)
+
+  case class CheckCode(id:ObjectId, code:String)
+
+  case class SendVerificationCode(verificationCode: String, phoneNumber: String)
+
+  case class CalculatePriceRoute(coordinateStart: Coordinate, coordinateFinish: Coordinate)
+
+}
+
+trait UserStorageResponse
+case class UserSuccessResponse(userId: String) extends UserStorageResponse
+
+object UserManagementExceptions {
+  case class UserNotFoundException(message:String) extends Exception with UserFacingError {
+    override def getMessage: String = message
+  }
+
+  case class MatchPatternNotFoundException(message: String) extends Exception with UserFacingError {
+    override def getMessage: String = message
+  }
+
+  case class SendVerificationCodeException(message: String) extends Exception with UserFacingError {
+    override def getMessage: String = message
+  }
+
+  case class CalculatePriceRouteException(message: String) extends Exception with UserFacingError {
+    override def getMessage: String = message
+  }
+
+}
+
+
 
 case class Device(name:String, number:String, imei:String, token: Option[String] = None)
 
