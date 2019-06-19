@@ -73,7 +73,9 @@ class UserStorageActor(collection: MongoCollection[User]) extends Actor with Act
         "dni" -> personalInformation.dni
       )
       val update = Document("$set" -> Document("personalInformation" -> fields))
-      val result = collection.findOneAndUpdate(filter, update).head()
+      val result = collection.findOneAndUpdate(filter, update)
+          .toFuture()
+          .recoverWith { case e => Future.failed(e) }
       result.pipeTo(sender())
 
     case AddFavoriteSite(id, favoriteSite) =>
@@ -99,10 +101,14 @@ class UserStorageActor(collection: MongoCollection[User]) extends Actor with Act
 
     case CheckCode(id, code) =>
       val filter = Document("_id" -> id, "confirmationCode" -> code)
-      val result = collection.find(filter)
+      val update = Document("$set" -> Document("isAuthenticated" -> true))
+      val result = collection.findOneAndUpdate(filter, update)
           .toFuture()
           .recoverWith{ case e => Future.failed(e) }
-          .map(_.headOption.nonEmpty )
+          .map {
+            case user: User => true
+            case _ => false
+          }
       result.pipeTo(sender())
   }
 

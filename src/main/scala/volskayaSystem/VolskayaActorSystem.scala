@@ -16,5 +16,5 @@ object VolskayaActorSystem {
     token = "key=AAAANyt87aU:APA91bFQjPaK7WRgEdzArxyuafUZFWZ0HR6LtFJWuc1q9Y6IrCu1sbgo2dU-7ywZNSIsqEdMkaISbkCs1nSZIaT3pKFwT7YaGsOm4gtHRsqrGMRuT9qzLDnQdt3mwLFBePij08xoAnex")
 
   val userManagementActor = system.actorOf(Props(classOf[UserManager], Mongo.usersCollection, googleMapsContext, fcmContext), "userManagementActor")
-  val volskayaLoggingActor = system.actorOf(Props(classOf[LoggingActor]), "volskayaLogginActor") // implement this in the future
+  // val volskayaLoggingActor = system.actorOf(Props(classOf[LoggingActor]), "volskayaLogginActor") // implement this in the future
 }

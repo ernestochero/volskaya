@@ -27,6 +27,8 @@ object UserManagementMessages {
 
   case class SendVerificationCode(verificationCode: String, phoneNumber: String)
 
+  case class CalculatePriceRoute(coordinateStart: Coordinate, coordinateFinish: Coordinate)
+
 }
 
 trait UserStorageResponse
@@ -42,6 +44,10 @@ object UserManagementExceptions {
   }
 
   case class SendVerificationCodeException(message: String) extends Exception with UserFacingError {
+    override def getMessage: String = message
+  }
+
+  case class CalculatePriceRouteException(message: String) extends Exception with UserFacingError {
     override def getMessage: String = message
   }
 

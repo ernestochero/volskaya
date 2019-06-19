@@ -5,11 +5,12 @@ import java.util.concurrent.TimeUnit
 import akka.pattern.ask
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Props}
 import akka.util.Timeout
-import googleMapsService.{ContextFCM, ContextGoogleMaps}
+import googleMapsService.{ContextFCM, ContextGoogleMaps, DistanceMatrixApi}
 import googlefcmservice.SendNotificationApi
-import models.UserManagementExceptions.{MatchPatternNotFoundException, SendVerificationCodeException, UserNotFoundException}
-import models.{Device, FavoriteSite, FavoriteSiteFieldId, PasswordField, User, UserDomain, VerificationCodeId}
+import models.UserManagementExceptions.{CalculatePriceRouteException, MatchPatternNotFoundException, SendVerificationCodeException, UserNotFoundException}
+import models.{Coordinate, Device, FavoriteSite, FavoriteSiteFieldId, PasswordField, User, UserDomain, VerificationCodeId}
 import akka.pattern.pipe
+import googleMapsService.model.{DistanceMatrix, TravelMode, Units}
 import googlefcmservice.model.SendNotification
 
 import scala.concurrent.duration.Duration
@@ -101,22 +102,28 @@ case class UserManagerAPI(system: ActorSystem) {
   def saveVerificationCode(id: ObjectId, verificationCode: String): Future[Boolean] = {
     (userManagementActor ? SaveVerificationCode(id, verificationCode)).flatMap {
       case res:UpdateResult if (res.getMatchedCount == 1) && res.wasAcknowledged() =>
+        log.debug(getSuccessSave(VerificationCodeId))
         Future.successful(true)
       case _ =>
         Future.failed(UserNotFoundException(getUserNotExistMessage))
     }.recoverWith {
-      case ex => Future.failed(ex)
+      case ex =>
+        log.error("Failed : {} with error : {}",getFailedSave(VerificationCodeId), ex.getMessage)
+        Future.failed(ex)
     }
   }
 
   def sendVerificationCode(verificationCode: String, phoneNumber: String): Future[Boolean] = {
     (userManagementActor ? SendVerificationCode(verificationCode, phoneNumber)).flatMap {
       case sendNotification:SendNotification if sendNotification.success == 1 =>
+        log.debug(getSuccessSendCode(VerificationCodeId))
         Future.successful(true)
       case _ =>
         Future.failed(SendVerificationCodeException(getFailedSendVerificationCode))
     }.recoverWith {
-      case ex => Future.failed(ex)
+      case ex =>
+        log.error("Failed : {} with error : {}",log.error(getFailedSendCode(VerificationCodeId)), ex.getMessage)
+        Future.failed(ex)
     }
   }
 
@@ -124,18 +131,15 @@ case class UserManagerAPI(system: ActorSystem) {
   def registerUser(email: String, password: String, phoneNumber: String): Future[VolskayaGetUserResponse] = {
     import scala.util.Random
     lazy val verificationCode = (1 to 6).foldLeft(""){(c,v) => s"$c${Random.nextInt(10)}"}
+    lazy val msgVerificationCode = s"Tu codigo de verificacion es $verificationCode "
     val device = Device(name = "", number = phoneNumber, imei = "")
     val user = User(email = Some(email), password = Some(password), device = Some(device), favoriteSites = Some(List.empty[FavoriteSite]))
     val result = (userManagementActor ? SaveUser(user)).mapTo[User]
     result.flatMap { user =>
       for {
         saveResult <- saveVerificationCode(user._id, verificationCode)
-        sendResult <- sendVerificationCode(verificationCode, phoneNumber)
+        sendResult <- sendVerificationCode(msgVerificationCode, phoneNumber)
       } yield {
-        if (saveResult) log.debug(getSuccessSave(VerificationCodeId))
-        if (sendResult) log.debug(getSuccessSendCode(VerificationCodeId))
-        if (!saveResult) log.error(getFailedSave(VerificationCodeId))
-        if (!sendResult) log.error(getFailedSendCode(VerificationCodeId))
         if (saveResult && sendResult)
           log.debug("Success")
         else
@@ -148,6 +152,42 @@ case class UserManagerAPI(system: ActorSystem) {
         Future.successful(VolskayaGetUserResponse(None, failedResponse))
     }
   }
+
+  def calculatePriceRoute(coordinateStart: Coordinate, coordinateFinish: Coordinate): Future[VolskayaGetPriceResponse] = {
+    val origins = coordinateStart.toString :: Nil
+    val destinations = coordinateFinish.toString :: Nil
+    val units = Some(Units.metric)
+    val travelMode = Some(TravelMode.walking)
+    //TODO optimize this function when we have a geoZone
+    def calculateByDistance(distanceMeters:Int): Double = distanceMeters match {
+      case v if v > 0 && v < 2800 => 4.0
+      case v if v > 2900 && v < 3800 => 5.0
+      case v if v > 3900 && v < 4800 => 6.0
+      case v if v > 4900 && v < 5800 => 7.0
+      case v if v > 5900 && v < 6800 => 8.0
+      case v if v > 6900 && v < 7800 => 9.0
+      case _ => 10.0
+    }
+
+    (userManagementActor ? CalculatePriceRoute(coordinateStart, coordinateFinish)).flatMap {
+      case dm:DistanceMatrix if dm.status == "OK" =>
+        val result = for {
+          row <- dm.rows
+          element <- row.elements
+        } yield {
+          (calculateByDistance(element.distance.value), element.distance.value)
+        }
+
+        val price = result.map(_._1).headOption
+        val distance = result.map(_._2).headOption
+        Future.successful(VolskayaGetPriceResponse(price, distance, VolskayaSuccessResponse(responseMessage = getSuccessCalculateMessage(models.PriceFieldId))))
+      case _ =>
+        Future.failed(CalculatePriceRouteException(getFailedSendVerificationCode))
+    }.recoverWith {
+      case ex => Future.failed(ex)
+    }
+  }
+
 }
 
 
@@ -184,6 +224,14 @@ class UserManager(collection: MongoCollection[User], googleMapsContext: ContextG
 
     case SendVerificationCode(verificationCode, phoneNumber) =>
       val result = SendNotificationApi.sendNotificationCode(verificationCode, phoneNumber)(fcmContext)
+      result.pipeTo(sender())
+
+    case CalculatePriceRoute(coordinateStart, coordinateFinish) =>
+      val origins = coordinateStart.toString :: Nil
+      val destinations = coordinateFinish.toString :: Nil
+      val units = Some(Units.metric)
+      val travelMode = Some(TravelMode.walking)
+      val result = DistanceMatrixApi.getDistanceMatrix(origins, destinations, units, travelMode)(googleMapsContext)
       result.pipeTo(sender())
   }
 }

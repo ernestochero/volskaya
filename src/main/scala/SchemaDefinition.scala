@@ -156,16 +156,15 @@ object SchemaDefinition {
       resolve = context => {
         context.ctx.checkCode(context.arg("id"), context.arg("code"))
       }
-    )
-    /*,
-
+    ),
     Field("getPrice", VolskayaMessagePriceResponseType,
       description = Some("Return a price of one Route"),
       arguments = Argument("coordinateStart", CoordinateInputType) :: Argument("coordinateFinish", CoordinateInputType) :: Nil,
       resolve = context => {
         context.ctx.calculatePriceRoute(context.arg("coordinateStart"), context.arg("coordinateFinish"))
       }
-    ),
+    )
+    /*,
     Field("sendCode", VolskayaMessageResponseType,
       arguments = Argument("code", StringType) :: Argument("phoneNumber", StringType) :: Nil,
       resolve = context => {
