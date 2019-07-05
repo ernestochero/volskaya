@@ -3,6 +3,15 @@ package models
 import akka.http.scaladsl.model.DateTime
 import org.bson.types.ObjectId
 //TODO: change to DateTime on time in the future
+// agregar direccion de entrega y recojo
+// Asignado al ciclista ~ en camino al punto de recojo ~  se recogio el pedido  ~  en camino al punto de entrega  ~ se entrego correctamente
+// guardar el ultimo estado
+// lista de productos ....
+// sacar la orden a otra collection , ahi relacionamos el userClient con el userCyclist
+// add booleano cobrar ...
+// direccion de recogo , direccion entrega
+// fecha de pedido ...
+
 case class Order(orderTypeName: Option[String],
                  statusOrderTypeName: Option[String],
                  kilometers:Option[Double],
@@ -24,6 +33,9 @@ case class Coordinate(latitude:Double, longitude:Double) extends CoordinateT {
 }
 
 case class Route(coordinateA: Coordinate, coordinateB: Coordinate)
+
+sealed trait State
+case class stateABC(name: String, timeInit: Option[DateTime], timeFinish: Option[DateTime], optionalDescription: Option[String], isFinished: Boolean)
 
 sealed trait OrderType {
   val description: String
