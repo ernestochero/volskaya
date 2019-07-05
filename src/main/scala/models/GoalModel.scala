@@ -2,16 +2,10 @@ package models
 
 import org.joda.time.DateTime
 
-case class Goal(products: Option[List[Product]],
-                userCyclistId: Option[String],
+case class Goal(userCyclistId: Option[String],
                 goalCoordinate: Option[Coordinate],
                 goalTypeName: Option[String],
                 goalCanceled: Option[GoalCanceled])
-
-case class Product(name:String,
-                   description: String,
-                   photo: Option[String],
-                   isSpecial: Option[Boolean])
 
 //TODO: change to DateTime on time in the future
 case class GoalCanceled(time: Option[String],

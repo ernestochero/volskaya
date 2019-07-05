@@ -2,6 +2,7 @@ package models
 
 import akka.http.scaladsl.model.DateTime
 import org.bson.types.ObjectId
+import org.joda.time.DateTimeZone
 //TODO: change to DateTime on time in the future
 // agregar direccion de entrega y recojo
 // Asignado al ciclista ~ en camino al punto de recojo ~  se recogio el pedido  ~  en camino al punto de entrega  ~ se entrego correctamente
@@ -12,6 +13,17 @@ import org.bson.types.ObjectId
 // direccion de recogo , direccion entrega
 // fecha de pedido ...
 
+// This version just has one route
+case class Order2(_id: ObjectId,
+                  clientId: Option[ObjectId],
+                  cyclistId: Option[ObjectId],
+                  route: Option[Route],
+                  orderStates: List[OrderState] = List(),
+                  payMethod: PayMethod,
+                  created: DateTime = DateTime.now(DateTimeZone.UTC),
+                  lastState: Option[OrderState]
+                )
+
 case class Order(orderTypeName: Option[String],
                  statusOrderTypeName: Option[String],
                  kilometers:Option[Double],
@@ -20,6 +32,48 @@ case class Order(orderTypeName: Option[String],
                  paymentDateTime: Option[String],
                  paymentMethod: Option[String],
                  goals: Option[List[Goal]] = None)
+
+
+case class Product(name:String, description: String, photo: Option[String])
+
+
+sealed trait OrderStateT {
+  val orderStateName: String
+}
+
+// update this with the respective orderStateName
+case object A extends OrderStateT {
+  override val orderStateName: String = "A"
+}
+
+case object B extends OrderStateT {
+  override val orderStateName: String = "B"
+}
+
+case object B extends OrderStateT {
+  override val orderStateName: String = "C"
+}
+
+case object B extends OrderStateT {
+  override val orderStateName: String = "D"
+}
+
+case class OrderState(nameState: OrderStateT, startTime: Option[DateTime], endTime: Option[DateTime], description: Option[String], isFinished: Boolean)
+
+
+sealed trait PayMethod {
+  val payMethodName: String
+}
+
+case object Cash extends PayMethod {
+  override val payMethodName: String = "cash"
+}
+
+case object Card extends PayMethod {
+  override val payMethodName: String = "card"
+}
+
+
 
 sealed trait CoordinateT {
   def latitude:Double
@@ -32,10 +86,8 @@ case class Coordinate(latitude:Double, longitude:Double) extends CoordinateT {
   override def getCoordinate: (Double, Double) = (latitude, longitude)
 }
 
-case class Route(coordinateA: Coordinate, coordinateB: Coordinate)
+case class Route(startCoordinate: Coordinate, endCoordinate: Coordinate)
 
-sealed trait State
-case class stateABC(name: String, timeInit: Option[DateTime], timeFinish: Option[DateTime], optionalDescription: Option[String], isFinished: Boolean)
 
 sealed trait OrderType {
   val description: String
