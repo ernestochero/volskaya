@@ -4,8 +4,8 @@ import play.api.libs.json.Json
 import repository.UserRepo
 import sangria.schema._
 import sangria.marshalling.playJson._
-import sangria.macros.derive.{InputObjectTypeName, deriveInputObjectType, deriveObjectType}
-import user.{UserManagerAPI}
+import sangria.macros.derive.{EnumTypeName, InputObjectTypeName, deriveEnumType, deriveInputObjectType, deriveObjectType}
+import user.UserManagerAPI
 object SchemaDefinition {
 
   /* type from classes */
@@ -50,6 +50,16 @@ object SchemaDefinition {
   implicit val routeFormat = Json.format[Route]
   implicit val RouteInputType = deriveInputObjectType[Route](InputObjectTypeName("RouteFieldsInput"))
 
+  implicit val OrderStateTType = deriveEnumType[OrderStateT](EnumTypeName("OrderStateT"))
+
+  implicit val OrderStateType = deriveObjectType[Unit, OrderState]()
+  implicit val orderStateFormat = Json.format[OrderState]
+  implicit val OrderStateInputType = deriveInputObjectType[OrderState](InputObjectTypeName("OrderStateFieldsInput"))
+
+  implicit val AddressType = deriveObjectType[Unit, Address]()
+  implicit val addressFormat = Json.format[Address]
+  implicit val AddressInputType = deriveInputObjectType[Address](InputObjectTypeName("AddressFieldsInput"))
+
   /* custom types*/
 
   implicit val VolskayaMessageInterfaceType = InterfaceType("volskayaMessageInterface","volskaya Message Interface Description",
@@ -88,44 +98,6 @@ object SchemaDefinition {
       Field("id", OptionType(StringType), resolve = _.value.id),
       Field ("volskayaResponse", VolskayaMessageResponseType, resolve = _.value.volskayaResponse)
     ))
-
-  /* Arguments*/
-  val IdArg = Argument("id", OptionInputType(StringType))
-  val DeviceArg = Argument("device", OptionInputType(DeviceInputType))
-  val PersonalInformationArg = Argument("personalInformation", OptionInputType(PersonalInformationInputType))
-  val EmailArg = Argument("email", OptionInputType(StringType))
-  val PasswordArg = Argument("password", OptionInputType(StringType))
-  val IsAuthenticatedArg = Argument("isAuthenticated", OptionInputType(BooleanType))
-  val OrdersArg = Argument("orders", OptionInputType(ListInputType(OrderInputType)))
-  val RouteArg = Argument("route", RouteInputType)
-  val FavoriteSitesArg = Argument("favoriteSites", OptionInputType(ListInputType(FavoriteSiteInputType)))
-  val ConfirmationCodeArg = Argument("confirmationCode", OptionInputType(StringType))
-
-  val arguments = List(
-    IdArg,
-    DeviceArg,
-    PersonalInformationArg,
-    EmailArg,
-    PasswordArg,
-    IsAuthenticatedArg,
-    OrdersArg,
-    FavoriteSitesArg,
-    ConfirmationCodeArg
-  )
-
-  def buildUserDomain(context:Context[UserRepo, Unit]): UserDomain = {
-    UserDomain(
-      context.arg(IdArg),
-      context.arg(DeviceArg),
-      context.arg(PersonalInformationArg),
-      context.arg(EmailArg),
-      context.arg(PasswordArg),
-      context.arg(IsAuthenticatedArg),
-      context.arg(OrdersArg).map(_.toList),
-      context.arg(FavoriteSitesArg).map(_.toList),
-      context.arg(ConfirmationCodeArg)
-    )
-  }
 
   val LimitArg = Argument("limit", OptionInputType(IntType), defaultValue = 20)
   val OffsetArg = Argument("offset", OptionInputType(IntType), defaultValue = 0)
@@ -198,14 +170,7 @@ object SchemaDefinition {
       resolve = context => {
         context.ctx.registerUser(context.arg("email"), context.arg("password"), context.arg("phoneNumber"))
       }
-    )/*,
-    Field("addUser", UserType,
-      arguments = arguments,
-      resolve = context => {
-        val repo = context.ctx
-        repo.saveUser(buildUserDomain(context))
-      }
-    )*/
+    )
    )
   )
 
