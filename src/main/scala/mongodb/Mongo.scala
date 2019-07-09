@@ -17,14 +17,16 @@ object Mongo {
   lazy val addFavoriteSiteCodecProvider = Macros.createCodecProvider[FavoriteSite]()
   lazy val personalInformationCodecProvider = Macros.createCodecProvider[PersonalInformation]()
   lazy val addressCodecProvider = Macros.createCodecProvider[Address]()
+  lazy val orderStateCodecProvider = Macros.createCodecProvider[OrderState]()
   lazy val config = ConfigFactory.load()
   lazy val mongoClient: MongoClient = MongoClient(config.getString("mongo.uri"))
   lazy val codecRegistry = fromRegistries(
     fromProviders(userCodecProvider, deviceCodecProvider, personalInformationCodecProvider,
-      orderCodecProvider, addFavoriteSiteCodecProvider, goalCodecProvider, goalCanceledCodecProvider, coordinateCodecProvider, productCodecProvider, addressCodecProvider),
+      orderCodecProvider, addFavoriteSiteCodecProvider, goalCodecProvider, goalCanceledCodecProvider,
+      coordinateCodecProvider, productCodecProvider, addressCodecProvider, orderStateCodecProvider),
     DEFAULT_CODEC_REGISTRY)
   lazy val database: MongoDatabase = mongoClient.getDatabase(config.getString("mongo.database")).withCodecRegistry(codecRegistry)
 
   lazy val usersCollection: MongoCollection[User] = database.getCollection[User]("users")
-
+  lazy val ordersCollection: MongoCollection[Order] = database.getCollection[Order]("orders")
 }

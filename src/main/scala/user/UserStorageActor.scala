@@ -11,13 +11,6 @@ import org.mongodb.scala.{Document, MongoCollection}
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration.Duration
 import akka.pattern.pipe
-import models.UserManagementExceptions.UserNotFoundException
-import models.VolskayaMessages._
-case class UserStorageActorAPI(system: ActorSystem) {
-  def userStorageActor = system.actorSelection("/user/userStorageActor")
-  import system.dispatcher
-  implicit val timeout = Timeout(Duration.create(30, TimeUnit.SECONDS))
-}
 
 class UserStorageActor(collection: MongoCollection[User]) extends Actor with ActorLogging  {
   implicit val ec: ExecutionContext = context.system.dispatcher

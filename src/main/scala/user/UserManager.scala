@@ -8,14 +8,16 @@ import akka.util.Timeout
 import googleMapsService.{ContextFCM, ContextGoogleMaps, DistanceMatrixApi}
 import googlefcmservice.SendNotificationApi
 import models.UserManagementExceptions.{CalculatePriceRouteException, MatchPatternNotFoundException, SendVerificationCodeException, UserNotFoundException}
-import models.{Coordinate, Device, FavoriteSite, FavoriteSiteFieldId, PasswordField, User, UserDomain, VerificationCodeId}
+import models._
 import akka.pattern.pipe
 import googleMapsService.model.{DistanceMatrix, TravelMode, Units}
 import googlefcmservice.model.SendNotification
+import models.OrderManagementMessages.SaveOrder
 
 import scala.concurrent.duration.Duration
 import models.UserManagementMessages._
 import models.VolskayaMessages._
+import order.OrderStorageActor
 import org.mongodb.scala.MongoCollection
 import org.mongodb.scala.bson.ObjectId
 import org.mongodb.scala.result.UpdateResult
@@ -25,6 +27,7 @@ import scala.concurrent.Future
 case class UserManagerAPI(system: ActorSystem) {
 
   def userManagementActor = system.actorSelection("/user/userManagementActor")
+  val orderManagerAPI = OrderManagerAPI(system)
 
   import system.dispatcher
 
@@ -188,14 +191,16 @@ case class UserManagerAPI(system: ActorSystem) {
     }
   }
 
+  def saveOrder(order: OrderDomain) = orderManagerAPI.storeOrder(order.asResource)
+
 }
 
 
-class UserManager(collection: MongoCollection[User], googleMapsContext: ContextGoogleMaps, fcmContext: ContextFCM) extends Actor with ActorLogging {
+class UserManager(userCollection: MongoCollection[User], googleMapsContext: ContextGoogleMaps, fcmContext: ContextFCM) extends Actor with ActorLogging {
   import context.dispatcher
 
   implicit val timeout = Timeout(Duration.create(30, TimeUnit.SECONDS))
-  val userStorage: ActorRef = context.watch(context.actorOf(Props(classOf[UserStorageActor], collection), "userStorage"))
+  val userStorage: ActorRef = context.watch(context.actorOf(Props(classOf[UserStorageActor], userCollection), "userStorage"))
 
   override def receive: Receive = {
     case msg@GetAllUsers(limit, offset) =>

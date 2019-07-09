@@ -5,7 +5,7 @@ import akka.stream.ActorMaterializer
 import googleMapsService.{ContextFCM, ContextGoogleMaps}
 import logging.LoggingActor
 import mongodb.Mongo
-import user.UserManager
+import user.{OrderManager, UserManager}
 
 object VolskayaActorSystem {
   implicit val system = ActorSystem("sangria-server")
@@ -16,5 +16,6 @@ object VolskayaActorSystem {
     token = "key=AAAANyt87aU:APA91bFQjPaK7WRgEdzArxyuafUZFWZ0HR6LtFJWuc1q9Y6IrCu1sbgo2dU-7ywZNSIsqEdMkaISbkCs1nSZIaT3pKFwT7YaGsOm4gtHRsqrGMRuT9qzLDnQdt3mwLFBePij08xoAnex")
 
   val userManagementActor = system.actorOf(Props(classOf[UserManager], Mongo.usersCollection, googleMapsContext, fcmContext), "userManagementActor")
+  val orderManagementActor = system.actorOf(Props(classOf[OrderManager], Mongo.ordersCollection), "orderManagementActor")
   // val volskayaLoggingActor = system.actorOf(Props(classOf[LoggingActor]), "volskayaLogginActor") // implement this in the future
 }

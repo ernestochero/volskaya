@@ -15,7 +15,7 @@ case object DistanceFieldId extends FieldId("distance")
 case object FavoriteSiteFieldId extends FieldId("favoriteSite")
 case object VerificationCodeId extends FieldId("verificationCode")
 case object DefaultFieldId extends FieldId("")
-
+case object OrderFieldId extends FieldId("order")
 object VolskayaMessages {
 
   sealed trait VolskayaMessage {

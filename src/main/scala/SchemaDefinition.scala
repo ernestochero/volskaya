@@ -1,7 +1,6 @@
 import models.VolskayaMessages._
 import models._
 import play.api.libs.json.Json
-import repository.UserRepo
 import sangria.schema._
 import sangria.marshalling.playJson._
 import sangria.macros.derive.{EnumTypeName, InputObjectTypeName, deriveEnumType, deriveInputObjectType, deriveObjectType}
@@ -26,10 +25,6 @@ object SchemaDefinition {
   implicit val goalFormat = Json.format[Goal]
   implicit val GoalInputType = deriveInputObjectType[Goal](InputObjectTypeName("GoalFieldsInput"))
 
-  implicit val OrderType = deriveObjectType[Unit, Order]()
-  implicit val orderFormat = Json.format[Order]
-  implicit val OrderInputType = deriveInputObjectType[Order](InputObjectTypeName("OrderFieldsInput"))
-
   implicit val DeviceType = deriveObjectType[Unit, Device]()
   implicit val deviceFormat  = Json.format[Device]
   implicit val DeviceInputType = deriveInputObjectType[Device](InputObjectTypeName("DeviceFieldsInput"))
@@ -46,11 +41,9 @@ object SchemaDefinition {
   implicit val userFormat = Json.format[UserDomain]
   implicit val UserInputType = deriveInputObjectType[UserDomain](InputObjectTypeName("UserFieldsInput"))
 
-  implicit val RouteType = deriveObjectType[Unit, Route]()
-  implicit val routeFormat = Json.format[Route]
-  implicit val RouteInputType = deriveInputObjectType[Route](InputObjectTypeName("RouteFieldsInput"))
-
   implicit val OrderStateTType = deriveEnumType[OrderStateT](EnumTypeName("OrderStateT"))
+
+  implicit val PayMethodType = deriveEnumType[PayMethod](EnumTypeName("PayMethod"))
 
   implicit val OrderStateType = deriveObjectType[Unit, OrderState]()
   implicit val orderStateFormat = Json.format[OrderState]
@@ -59,6 +52,14 @@ object SchemaDefinition {
   implicit val AddressType = deriveObjectType[Unit, Address]()
   implicit val addressFormat = Json.format[Address]
   implicit val AddressInputType = deriveInputObjectType[Address](InputObjectTypeName("AddressFieldsInput"))
+
+  implicit val RouteType = deriveObjectType[Unit, Route]()
+  implicit val routeFormat = Json.format[Route]
+  implicit val RouteInputType = deriveInputObjectType[Route](InputObjectTypeName("RouteFieldsInput"))
+
+  implicit val OrderType = deriveObjectType[Unit, OrderDomain]()
+  implicit val orderFormat = Json.format[OrderDomain]
+  implicit val OrderInputType = deriveInputObjectType[OrderDomain](InputObjectTypeName("OrderFieldsInput"))
 
   /* custom types*/
 
@@ -146,7 +147,7 @@ object SchemaDefinition {
   )
   )
 
-  val MutationType = ObjectType("Mutation", fields[UserManagerAPI, Unit](
+  val userFields = fields[UserManagerAPI, Unit](
     Field("updatePassword",VolskayaMessageResponseType,
       arguments = Argument("id", StringType)
         :: Argument("oldPassword", StringType)
@@ -171,8 +172,20 @@ object SchemaDefinition {
         context.ctx.registerUser(context.arg("email"), context.arg("password"), context.arg("phoneNumber"))
       }
     )
-   )
   )
+
+  val orderFields = fields[UserManagerAPI, Unit](
+    Field("saveOrder",VolskayaMessageResponseType,
+      arguments = Argument("order", OrderInputType) :: Nil,
+      resolve = context => {
+        context.ctx.saveOrder(context.arg("order"))
+      }
+    )
+  )
+
+  val mutationFields = userFields ++ orderFields
+
+  val MutationType = ObjectType("Mutation", mutationFields)
 
   val UserSchema = Schema(QueryType, Some(MutationType))
 }
