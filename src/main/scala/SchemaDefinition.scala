@@ -3,8 +3,8 @@ import models._
 import play.api.libs.json.Json
 import sangria.schema._
 import sangria.marshalling.playJson._
-import sangria.macros.derive.{EnumTypeName, InputObjectTypeName, deriveEnumType, deriveInputObjectType, deriveObjectType}
-import user.UserManagerAPI
+import sangria.macros.derive._
+import volskayaSystem.VolskayaController
 object SchemaDefinition {
 
   /* type from classes */
@@ -103,7 +103,7 @@ object SchemaDefinition {
   val LimitArg = Argument("limit", OptionInputType(IntType), defaultValue = 20)
   val OffsetArg = Argument("offset", OptionInputType(IntType), defaultValue = 0)
 
-  val QueryType = ObjectType("Query", fields[UserManagerAPI, Unit](
+  val QueryType = ObjectType("Query", fields[VolskayaController, Unit](
     Field("allUsers", ListType(UserType),
       description = Some("Returns a list of all available users."),
       arguments = LimitArg :: OffsetArg :: Nil,
@@ -137,17 +137,10 @@ object SchemaDefinition {
         context.ctx.calculatePriceRoute(context.arg("coordinateStart"), context.arg("coordinateFinish"))
       }
     )
-    /*,
-    Field("sendCode", VolskayaMessageResponseType,
-      arguments = Argument("code", StringType) :: Argument("phoneNumber", StringType) :: Nil,
-      resolve = context => {
-        context.ctx.sendCode(context.arg("code"), context.arg("phoneNumber"))
-      }
-    )*/
   )
   )
 
-  val userFields = fields[UserManagerAPI, Unit](
+  val userFields = fields[VolskayaController, Unit](
     Field("updatePassword",VolskayaMessageResponseType,
       arguments = Argument("id", StringType)
         :: Argument("oldPassword", StringType)
@@ -174,7 +167,7 @@ object SchemaDefinition {
     )
   )
 
-  val orderFields = fields[UserManagerAPI, Unit](
+  val orderFields = fields[VolskayaController, Unit](
     Field("saveOrder",VolskayaMessageResponseType,
       arguments = Argument("order", OrderInputType) :: Nil,
       resolve = context => {
