@@ -31,6 +31,10 @@ libraryDependencies ++= Seq(
   "org.joda" % "joda-convert" % "2.2.0",
 
   "org.mongodb.scala" %% "mongo-scala-driver" % "2.1.0",
+
+  "org.sangria-graphql" %% "sangria-akka-streams" % "1.0.1",
+  "io.monix" %% "monix" % "2.3.3",
+  "de.heikoseeberger" %% "akka-sse" % "2.0.0",
 )
 
 Revolver.settings

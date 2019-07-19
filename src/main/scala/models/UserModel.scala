@@ -3,6 +3,15 @@ package models
 import org.bson.types.ObjectId
 import sangria.execution.UserFacingError
 
+trait Event {
+  def id: String
+}
+sealed trait UserEvent extends Event
+
+object UserManagementEvents {
+  case class UserEventCreated(id:String, userDomain: UserDomain) extends UserEvent
+}
+
 object OrderManagementMessages {
 
   case class GetAllOrders(limit:Int, offset:Int)

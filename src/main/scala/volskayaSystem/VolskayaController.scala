@@ -2,29 +2,39 @@ package volskayaSystem
 
 import java.util.concurrent.TimeUnit
 
+import akka.NotUsed
+import akka.pattern.ask
 import akka.actor.ActorSystem
+import akka.stream.OverflowStrategy
+import akka.stream.scaladsl.Source
 import akka.util.Timeout
 import googleMapsService.model.{DistanceMatrix, TravelMode, Units}
 import googlefcmservice.model.SendNotification
+import models.UserManagementEvents.UserEventCreated
 import models._
 import models.UserManagementExceptions._
 import models.VolskayaMessages._
 import org.mongodb.scala.bson.ObjectId
 import org.mongodb.scala.result.UpdateResult
+import org.reactivestreams.Publisher
+import user.MemoryEventStore._
 import user.{OrderManagerAPI, UserManagerAPI}
 
 import scala.concurrent.Future
 import scala.concurrent.duration.Duration
 
-case class VolskayaController(system: ActorSystem) {
+case class VolskayaController(system: ActorSystem, eventStorePublisher: Publisher[Event]) {
 
   val userManagerAPI  = UserManagerAPI(system)
   val orderManagerAPI = OrderManagerAPI(system)
+  def usersViewManagmentActor = system.actorSelection("/user/UsersViewManagmentActor")
+  def eventManagmentActor = system.actorSelection("/user/eventManagmentActor")
 
-  import system.dispatcher
+  implicit val ec = system.dispatcher
   implicit val timeout = Timeout(Duration.create(30, TimeUnit.SECONDS))
 
   val log = system.log
+  lazy val eventStream: Source[Event, NotUsed] = Source.fromPublisher(eventStorePublisher).buffer(100, OverflowStrategy.fail)
 
   def getAllUsers(limit:Int, offset:Int): Future[Seq[UserDomain]] =
     userManagerAPI.getAllUsers(limit:Int, offset:Int).map(users => users.map(_.asDomain))
@@ -135,6 +145,19 @@ case class VolskayaController(system: ActorSystem) {
         else
           log.error("Failed")
       }
+
+      // at this point we need to publish the event
+      (eventManagmentActor ? AddEvent(UserEventCreated("userCreated",user.asDomain))).foreach {
+        case EventAdded(event) =>
+          log.debug("The Event Added Successfully {} ", event.id )
+        case OverCapacity(_) =>
+          log.debug("Service is overloaded.")
+        case EventAlreadyExist(event: Event) =>
+          log.debug("The event already exist {}", event.id)
+        case _ =>
+          log.debug("Another.")
+      }
+
       Future.successful(VolskayaGetUserResponse(Some(user.asDomain),VolskayaSuccessResponse(responseMessage = getSuccessLoginMessage(models.UserField))))
     }.recoverWith {
       case ex =>
