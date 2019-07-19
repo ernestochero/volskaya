@@ -5,9 +5,10 @@ import java.util.concurrent.TimeUnit
 import akka.actor.{Actor, ActorLogging}
 import akka.util.Timeout
 import models.Order
-import models.OrderManagementMessages.SaveOrder
+import models.OrderManagementMessages._
 import org.mongodb.scala.MongoCollection
 import akka.pattern.pipe
+
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.Duration
 
@@ -16,12 +17,16 @@ class OrderStorageActor(collection: MongoCollection[Order]) extends Actor with A
   implicit val timeout = Timeout(Duration.create(30, TimeUnit.SECONDS))
 
   override def receive: Receive = {
-    case SaveOrder(order) => {
+    case SaveOrder(order) =>
       val result =  collection.insertOne(order)
         .toFuture()
         .recoverWith { case e => Future.failed(e) }
         .map(_ => order)
       result.pipeTo(sender())
-    }
+
+    case GetAllOrders(limit, offset) =>
+      val result = collection.find().skip(offset).limit(limit).toFuture()
+      result.pipeTo(sender())
+
   }
 }

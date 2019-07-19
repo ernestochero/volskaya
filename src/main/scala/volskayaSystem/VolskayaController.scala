@@ -179,6 +179,10 @@ case class VolskayaController(system: ActorSystem) {
   }
 
   // orders section
+
+  def getAllOrders(limit:Int, offset:Int): Future[Seq[OrderDomain]] =
+    orderManagerAPI.getAllOrders(limit, offset).map(orders => orders.map(_.asDomain))
+
   def saveOrder(order: OrderDomain): Future[VolskayaResponse] = {
     orderManagerAPI.saveOrder(order).flatMap {
       case order: Order =>

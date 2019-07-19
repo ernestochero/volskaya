@@ -4,6 +4,9 @@ import org.bson.types.ObjectId
 import sangria.execution.UserFacingError
 
 object OrderManagementMessages {
+
+  case class GetAllOrders(limit:Int, offset:Int)
+
   case class SaveOrder(order: Order)
 }
 

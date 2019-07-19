@@ -103,7 +103,7 @@ object SchemaDefinition {
   val LimitArg = Argument("limit", OptionInputType(IntType), defaultValue = 20)
   val OffsetArg = Argument("offset", OptionInputType(IntType), defaultValue = 0)
 
-  val QueryType = ObjectType("Query", fields[VolskayaController, Unit](
+  val userFieldQueries  = fields[VolskayaController, Unit](
     Field("allUsers", ListType(UserType),
       description = Some("Returns a list of all available users."),
       arguments = LimitArg :: OffsetArg :: Nil,
@@ -138,9 +138,18 @@ object SchemaDefinition {
       }
     )
   )
+
+  val ordersFieldQueries = fields[VolskayaController, Unit](
+    Field("allOrders", ListType(OrderType),
+      description = Some("Returns a list of all available orders."),
+      arguments = LimitArg :: OffsetArg :: Nil,
+      resolve = context => {
+        context.ctx.getAllOrders(context.arg(LimitArg), context.arg(OffsetArg))
+      }
+    )
   )
 
-  val userFields = fields[VolskayaController, Unit](
+  val userFieldMutations = fields[VolskayaController, Unit](
     Field("updatePassword",VolskayaMessageResponseType,
       arguments = Argument("id", StringType)
         :: Argument("oldPassword", StringType)
@@ -167,7 +176,7 @@ object SchemaDefinition {
     )
   )
 
-  val orderFields = fields[VolskayaController, Unit](
+  val orderFieldMutations = fields[VolskayaController, Unit](
     Field("saveOrder",VolskayaMessageResponseType,
       arguments = Argument("order", OrderInputType) :: Nil,
       resolve = context => {
@@ -176,7 +185,10 @@ object SchemaDefinition {
     )
   )
 
-  val mutationFields = userFields ++ orderFields
+
+  val QueryType = ObjectType("Query", userFieldQueries ++ ordersFieldQueries)
+
+  val mutationFields = userFieldMutations ++ orderFieldMutations
 
   val MutationType = ObjectType("Mutation", mutationFields)
 

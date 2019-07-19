@@ -4,16 +4,6 @@ import org.bson.types.ObjectId
 import org.joda.time.{DateTime, DateTimeZone}
 import play.api.libs.json._
 
-//TODO: change to DateTime on time in the future
-// agregar direccion de entrega y recojo
-// Asignado al ciclista ~ en camino al punto de recojo ~  se recogio el pedido  ~  en camino al punto de entrega  ~ se entrego correctamente
-// guardar el ultimo estado
-// lista de productos ....
-// sacar la orden a otra collection , ahi relacionamos el userClient con el userCyclist
-// add booleano cobrar ...
-// direccion de recogo , direccion entrega
-// fecha de pedido ...
-
 // This version just has one route
 case class Order(_id: ObjectId = new ObjectId(),
                  clientId: String,
@@ -22,12 +12,13 @@ case class Order(_id: ObjectId = new ObjectId(),
                  price: Option[Double],
                  orderStates: List[OrderState] = List(),
                  payMethod: Option[String],
+                 isPaid: Option[Boolean],
                  lastState: Option[OrderState],
                  products: List[Product] = List(),
                  created:Option[String],
                 ) {
   def asDomain = OrderDomain(Some(_id.toHexString),
-    clientId, cyclistId, route, price, orderStates, payMethod, lastState, products,
+    clientId, cyclistId, route, price, orderStates, payMethod, isPaid, lastState, products,
     created
   )
 }
@@ -39,16 +30,17 @@ case class OrderDomain(id: Option[String],
                        price: Option[Double],
                        orderStates: List[OrderState] = List(),
                        payMethod: Option[String],
+                       isPaid: Option[Boolean],
                        lastState: Option[OrderState],
                        products: List[Product] = List(),
                        created: Option[String] = Some(DateTime.now(DateTimeZone.UTC).toString),
                       ) {
   def asResource = Order( id.fold(ObjectId.get()){ new ObjectId(_) },
-    clientId, cyclistId, route, price, orderStates, payMethod, lastState, products,created
+    clientId, cyclistId, route, price, orderStates, payMethod, isPaid, lastState, products,created
   )
 }
 
-case class Product(name:String, description: String, photo: Option[String])
+case class Product(name:String, description: String, photo: Option[String] = None)
 
 sealed trait OrderStateT {
   val orderStateName: String
