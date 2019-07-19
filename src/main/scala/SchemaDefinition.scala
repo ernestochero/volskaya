@@ -1,11 +1,10 @@
 import models.VolskayaMessages._
 import models._
 import play.api.libs.json.Json
-import repository.UserRepo
 import sangria.schema._
 import sangria.marshalling.playJson._
-import sangria.macros.derive.{InputObjectTypeName, deriveInputObjectType, deriveObjectType}
-import user.{UserManagerAPI}
+import sangria.macros.derive._
+import volskayaSystem.VolskayaController
 object SchemaDefinition {
 
   /* type from classes */
@@ -26,10 +25,6 @@ object SchemaDefinition {
   implicit val goalFormat = Json.format[Goal]
   implicit val GoalInputType = deriveInputObjectType[Goal](InputObjectTypeName("GoalFieldsInput"))
 
-  implicit val OrderType = deriveObjectType[Unit, Order]()
-  implicit val orderFormat = Json.format[Order]
-  implicit val OrderInputType = deriveInputObjectType[Order](InputObjectTypeName("OrderFieldsInput"))
-
   implicit val DeviceType = deriveObjectType[Unit, Device]()
   implicit val deviceFormat  = Json.format[Device]
   implicit val DeviceInputType = deriveInputObjectType[Device](InputObjectTypeName("DeviceFieldsInput"))
@@ -46,9 +41,25 @@ object SchemaDefinition {
   implicit val userFormat = Json.format[UserDomain]
   implicit val UserInputType = deriveInputObjectType[UserDomain](InputObjectTypeName("UserFieldsInput"))
 
+  implicit val OrderStateTType = deriveEnumType[OrderStateT](EnumTypeName("OrderStateT"))
+
+  implicit val PayMethodType = deriveEnumType[PayMethod](EnumTypeName("PayMethod"))
+
+  implicit val OrderStateType = deriveObjectType[Unit, OrderState]()
+  implicit val orderStateFormat = Json.format[OrderState]
+  implicit val OrderStateInputType = deriveInputObjectType[OrderState](InputObjectTypeName("OrderStateFieldsInput"))
+
+  implicit val AddressType = deriveObjectType[Unit, Address]()
+  implicit val addressFormat = Json.format[Address]
+  implicit val AddressInputType = deriveInputObjectType[Address](InputObjectTypeName("AddressFieldsInput"))
+
   implicit val RouteType = deriveObjectType[Unit, Route]()
   implicit val routeFormat = Json.format[Route]
   implicit val RouteInputType = deriveInputObjectType[Route](InputObjectTypeName("RouteFieldsInput"))
+
+  implicit val OrderType = deriveObjectType[Unit, OrderDomain]()
+  implicit val orderFormat = Json.format[OrderDomain]
+  implicit val OrderInputType = deriveInputObjectType[OrderDomain](InputObjectTypeName("OrderFieldsInput"))
 
   /* custom types*/
 
@@ -89,48 +100,10 @@ object SchemaDefinition {
       Field ("volskayaResponse", VolskayaMessageResponseType, resolve = _.value.volskayaResponse)
     ))
 
-  /* Arguments*/
-  val IdArg = Argument("id", OptionInputType(StringType))
-  val DeviceArg = Argument("device", OptionInputType(DeviceInputType))
-  val PersonalInformationArg = Argument("personalInformation", OptionInputType(PersonalInformationInputType))
-  val EmailArg = Argument("email", OptionInputType(StringType))
-  val PasswordArg = Argument("password", OptionInputType(StringType))
-  val IsAuthenticatedArg = Argument("isAuthenticated", OptionInputType(BooleanType))
-  val OrdersArg = Argument("orders", OptionInputType(ListInputType(OrderInputType)))
-  val RouteArg = Argument("route", RouteInputType)
-  val FavoriteSitesArg = Argument("favoriteSites", OptionInputType(ListInputType(FavoriteSiteInputType)))
-  val ConfirmationCodeArg = Argument("confirmationCode", OptionInputType(StringType))
-
-  val arguments = List(
-    IdArg,
-    DeviceArg,
-    PersonalInformationArg,
-    EmailArg,
-    PasswordArg,
-    IsAuthenticatedArg,
-    OrdersArg,
-    FavoriteSitesArg,
-    ConfirmationCodeArg
-  )
-
-  def buildUserDomain(context:Context[UserRepo, Unit]): UserDomain = {
-    UserDomain(
-      context.arg(IdArg),
-      context.arg(DeviceArg),
-      context.arg(PersonalInformationArg),
-      context.arg(EmailArg),
-      context.arg(PasswordArg),
-      context.arg(IsAuthenticatedArg),
-      context.arg(OrdersArg).map(_.toList),
-      context.arg(FavoriteSitesArg).map(_.toList),
-      context.arg(ConfirmationCodeArg)
-    )
-  }
-
   val LimitArg = Argument("limit", OptionInputType(IntType), defaultValue = 20)
   val OffsetArg = Argument("offset", OptionInputType(IntType), defaultValue = 0)
 
-  val QueryType = ObjectType("Query", fields[UserManagerAPI, Unit](
+  val userFieldQueries  = fields[VolskayaController, Unit](
     Field("allUsers", ListType(UserType),
       description = Some("Returns a list of all available users."),
       arguments = LimitArg :: OffsetArg :: Nil,
@@ -164,17 +137,19 @@ object SchemaDefinition {
         context.ctx.calculatePriceRoute(context.arg("coordinateStart"), context.arg("coordinateFinish"))
       }
     )
-    /*,
-    Field("sendCode", VolskayaMessageResponseType,
-      arguments = Argument("code", StringType) :: Argument("phoneNumber", StringType) :: Nil,
-      resolve = context => {
-        context.ctx.sendCode(context.arg("code"), context.arg("phoneNumber"))
-      }
-    )*/
-  )
   )
 
-  val MutationType = ObjectType("Mutation", fields[UserManagerAPI, Unit](
+  val ordersFieldQueries = fields[VolskayaController, Unit](
+    Field("allOrders", ListType(OrderType),
+      description = Some("Returns a list of all available orders."),
+      arguments = LimitArg :: OffsetArg :: Nil,
+      resolve = context => {
+        context.ctx.getAllOrders(context.arg(LimitArg), context.arg(OffsetArg))
+      }
+    )
+  )
+
+  val userFieldMutations = fields[VolskayaController, Unit](
     Field("updatePassword",VolskayaMessageResponseType,
       arguments = Argument("id", StringType)
         :: Argument("oldPassword", StringType)
@@ -198,16 +173,24 @@ object SchemaDefinition {
       resolve = context => {
         context.ctx.registerUser(context.arg("email"), context.arg("password"), context.arg("phoneNumber"))
       }
-    )/*,
-    Field("addUser", UserType,
-      arguments = arguments,
-      resolve = context => {
-        val repo = context.ctx
-        repo.saveUser(buildUserDomain(context))
-      }
-    )*/
-   )
+    )
   )
+
+  val orderFieldMutations = fields[VolskayaController, Unit](
+    Field("saveOrder",VolskayaMessageResponseType,
+      arguments = Argument("order", OrderInputType) :: Nil,
+      resolve = context => {
+        context.ctx.saveOrder(context.arg("order"))
+      }
+    )
+  )
+
+
+  val QueryType = ObjectType("Query", userFieldQueries ++ ordersFieldQueries)
+
+  val mutationFields = userFieldMutations ++ orderFieldMutations
+
+  val MutationType = ObjectType("Mutation", mutationFields)
 
   val UserSchema = Schema(QueryType, Some(MutationType))
 }

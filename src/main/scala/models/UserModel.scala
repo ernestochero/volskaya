@@ -3,6 +3,13 @@ package models
 import org.bson.types.ObjectId
 import sangria.execution.UserFacingError
 
+object OrderManagementMessages {
+
+  case class GetAllOrders(limit:Int, offset:Int)
+
+  case class SaveOrder(order: Order)
+}
+
 object UserManagementMessages {
 
   case class SaveUser(user:User)
@@ -67,12 +74,12 @@ case class UserDomain(id: Option[String],
                       email: Option[String],
                       password: Option[String],
                       isAuthenticated: Option[Boolean],
-                      orders: Option[List[Order]],
                       favoriteSites: Option[List[FavoriteSite]],
-                      confirmationCode: Option[String]
+                      confirmationCode: Option[String],
+                      role: Option[String]
                      ) {
   def asResource = User( id.fold(ObjectId.get()){new ObjectId(_)},
-    device, personalInformation, email, password, isAuthenticated, orders, favoriteSites, confirmationCode)
+    device, personalInformation, email, password, isAuthenticated, favoriteSites, confirmationCode, role)
 }
 
 case class User(_id: ObjectId = new ObjectId(),
@@ -81,9 +88,33 @@ case class User(_id: ObjectId = new ObjectId(),
                 email: Option[String] = None,
                 password: Option[String] = None,
                 isAuthenticated: Option[Boolean] = None,
-                orders: Option[List[Order]] = None,
                 favoriteSites: Option[List[FavoriteSite]] = None,
-                confirmationCode: Option[String] = None
+                confirmationCode: Option[String] = None,
+                role: Option[String] = None
                ) {
-  def asDomain = UserDomain(Some(_id.toHexString),device, personalInformation, email, password, isAuthenticated, orders, favoriteSites, confirmationCode)
+  def asDomain = UserDomain(Some(_id.toHexString),device, personalInformation, email, password, isAuthenticated, favoriteSites, confirmationCode, role)
+}
+
+sealed trait Role {
+  val roleName: String
+}
+
+object Role {
+
+  def decodeRoleName(name:String) = {
+    name match {
+      case "client" => Client
+      case "cyclist" => Cyclist
+      case _ => throw new Exception("role name don't recognisable")
+    }
+  }
+
+  case object Client extends Role {
+    override val roleName: String = "client"
+  }
+
+  case object  Cyclist extends Role {
+    override val roleName: String = "cyclist"
+  }
+
 }

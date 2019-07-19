@@ -17,7 +17,6 @@ import io.circe.parser._
 import com.typesafe.config.ConfigFactory
 
 import scala.util.control.NonFatal
-
 import scala.util.{Failure, Success}
 import GraphQLRequestUnmarshaller._
 import mongodb.Mongo
@@ -25,6 +24,7 @@ import repository.UserRepository
 import sangria.slowlog.SlowLog
 import user.UserManagerAPI
 import volskayaSystem.VolskayaActorSystem._
+import volskayaSystem.VolskayaController
 
 object Server extends App with CorsSupport {
 
@@ -37,7 +37,7 @@ object Server extends App with CorsSupport {
 
 
   def executeGraphQL(query: Document, operationName: Option[String], variables: Option[Json], tracing: Boolean) = {
-    complete(Executor.execute(SchemaDefinition.UserSchema, query, UserManagerAPI(system),
+    complete(Executor.execute(SchemaDefinition.UserSchema, query, VolskayaController(system),
       variables = variables.getOrElse(Json.obj()),
       operationName = operationName,
       middleware = if (tracing) SlowLog.apolloTracing :: Nil else Nil)
