@@ -1,7 +1,5 @@
 package volskayaSystem
 
-import java.util.concurrent.TimeUnit
-
 import akka.actor.ActorSystem
 import akka.util.Timeout
 import googleMapsService.model.{ DistanceMatrix, TravelMode, Units }
@@ -16,7 +14,7 @@ import org.mongodb.scala.result.UpdateResult
 import user.{ OrderManagerAPI, UserManagerAPI }
 
 import scala.concurrent.Future
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration.{ Duration, SECONDS }
 
 case class VolskayaController(system: ActorSystem) {
 
@@ -24,7 +22,7 @@ case class VolskayaController(system: ActorSystem) {
   val orderManagerAPI = OrderManagerAPI(system)
 
   import system.dispatcher
-  implicit val timeout = Timeout(Duration.create(30, TimeUnit.SECONDS))
+  implicit val timeout = Timeout(Duration.create(30, SECONDS))
 
   val log = system.log
 

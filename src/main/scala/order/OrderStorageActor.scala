@@ -1,7 +1,5 @@
 package order
 
-import java.util.concurrent.TimeUnit
-
 import akka.actor.{ Actor, ActorLogging }
 import akka.util.Timeout
 import models.Order
@@ -10,11 +8,11 @@ import org.mongodb.scala.{ Document, MongoCollection }
 import akka.pattern.pipe
 
 import scala.concurrent.{ ExecutionContext, Future }
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration.{ Duration, SECONDS }
 
 class OrderStorageActor(orderCollection: MongoCollection[Order]) extends Actor with ActorLogging {
   implicit val ec: ExecutionContext = context.system.dispatcher
-  implicit val timeout              = Timeout(Duration.create(30, TimeUnit.SECONDS))
+  implicit val timeout              = Timeout(Duration.create(30, SECONDS))
 
   override def receive: Receive = {
     case SaveOrder(order) =>

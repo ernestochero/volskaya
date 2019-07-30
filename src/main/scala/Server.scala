@@ -1,5 +1,3 @@
-import java.util.concurrent.TimeUnit
-
 import sangria.ast.Document
 import sangria.execution.{ ErrorWithResolver, Executor, QueryAnalysisError }
 import sangria.parser.{ QueryParser, SyntaxError }
@@ -29,11 +27,11 @@ import user.UserManagerAPI
 import volskayaSystem.VolskayaActorSystem._
 import volskayaSystem.VolskayaController
 
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration.{ Duration, SECONDS }
 
 object Server extends App with CorsSupport {
 
-  implicit val timeout      = Timeout(Duration.create(30, TimeUnit.SECONDS))
+  implicit val timeout      = Timeout(Duration.create(30, SECONDS))
   implicit val materializer = ActorMaterializer()
   implicit val ec           = system.dispatcher
 

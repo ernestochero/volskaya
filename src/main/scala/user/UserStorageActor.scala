@@ -1,20 +1,18 @@
 package user
 
-import java.util.concurrent.TimeUnit
-
-import akka.actor.{ Actor, ActorLogging, ActorSystem }
+import akka.actor.{ Actor, ActorLogging }
 import akka.util.Timeout
 import models.User
 import models.UserManagementMessages._
 import org.mongodb.scala.{ Document, MongoCollection }
 
 import scala.concurrent.{ Await, ExecutionContext, Future }
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration.{ Duration, SECONDS }
 import akka.pattern.pipe
 
 class UserStorageActor(collection: MongoCollection[User]) extends Actor with ActorLogging {
   implicit val ec: ExecutionContext = context.system.dispatcher
-  implicit val timeout              = Timeout(Duration.create(30, TimeUnit.SECONDS))
+  implicit val timeout              = Timeout(Duration.create(30, SECONDS))
 
   override def receive: Receive = {
     case SaveUser(user) =>
