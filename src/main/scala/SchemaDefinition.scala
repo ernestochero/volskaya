@@ -260,7 +260,7 @@ object SchemaDefinition {
   val orderFieldMutations = fields[VolskayaController, Unit](
     Field(
       "registerOrder",
-      VolskayaMessageResponseType,
+      VolskayaMessageRegisterResponseType,
       arguments = Argument("route", RouteInputType)
       :: Argument("clientId", StringType)
       :: Argument("finalClient", FinalClientInputType)

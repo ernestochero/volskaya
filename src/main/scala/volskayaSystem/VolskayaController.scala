@@ -270,7 +270,7 @@ case class VolskayaController(system: ActorSystem) {
     price: Double,
     distance: Double,
     generalDescription: String
-  ): Future[VolskayaResponse] = {
+  ): Future[VolskayaRegisterResponse] = {
     val orderBuilt = Order(
       route = Some(route),
       clientId = Some(clientId),
@@ -286,7 +286,10 @@ case class VolskayaController(system: ActorSystem) {
       .flatMap {
         case order: Order =>
           Future.successful(
-            VolskayaSuccessResponse(responseMessage = getSuccessSave(models.OrderFieldId))
+            VolskayaRegisterResponse(
+              Some(order._id.toHexString),
+              VolskayaSuccessResponse(responseMessage = getSuccessSave(models.OrderFieldId))
+            )
           )
         case _ =>
           Future.failed(MatchPatternNotFoundException(getMatchPatternNotFoundMessage))
@@ -294,7 +297,10 @@ case class VolskayaController(system: ActorSystem) {
       .recoverWith {
         case ex =>
           Future.successful(
-            VolskayaFailedResponse(responseMessage = getDefaultErrorMessage(ex.getMessage))
+            VolskayaRegisterResponse(
+              None,
+              VolskayaFailedResponse(responseMessage = getDefaultErrorMessage(ex.getMessage))
+            )
           )
       }
 
