@@ -299,4 +299,25 @@ case class VolskayaController(system: ActorSystem) {
       }
 
   }
+
+  def getOrder(id: String): Future[VolskayaGetOrderResponse] =
+    orderManagerAPI
+      .getOrder(id)
+      .flatMap {
+        case Some(order) =>
+          Future.successful(
+            VolskayaGetOrderResponse(
+              Some(order.asDomain),
+              VolskayaSuccessResponse(responseMessage = getSuccessGetMessage(models.UserField))
+            )
+          )
+        case _ =>
+          Future.failed(UserNotFoundException(getUserNotExistMessage))
+      }
+      .recoverWith {
+        case ex =>
+          val failedResponse =
+            VolskayaFailedResponse(responseMessage = getDefaultErrorMessage(ex.getMessage))
+          Future.successful(VolskayaGetOrderResponse(None, failedResponse))
+      }
 }

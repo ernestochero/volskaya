@@ -5,10 +5,11 @@ import java.util.concurrent.TimeUnit
 import akka.actor.{ Actor, ActorLogging, ActorRef, ActorSystem, Props }
 import akka.util.Timeout
 import models.{ Order, OrderDomain }
-import models.OrderManagementMessages.{ GetAllOrders, SaveOrder }
+import models.OrderManagementMessages._
 import org.mongodb.scala.MongoCollection
 import akka.pattern.ask
 import order.OrderStorageActor
+import org.mongodb.scala.bson.ObjectId
 
 import scala.concurrent.Future
 import scala.concurrent.duration.Duration
@@ -25,6 +26,9 @@ case class OrderManagerAPI(system: ActorSystem) {
 
   def saveOrder(order: Order): Future[Order] =
     (orderManagementActor ? SaveOrder(order)).mapTo[Order]
+
+  def getOrder(id: String): Future[Option[Order]] =
+    (orderManagementActor ? GetOrder(new ObjectId(id))).mapTo[Option[Order]]
 }
 
 class OrderManager(collection: MongoCollection[Order]) extends Actor with ActorLogging {
@@ -36,6 +40,8 @@ class OrderManager(collection: MongoCollection[Order]) extends Actor with ActorL
     case msg @ GetAllOrders(limit, offset) =>
       orderStorageActor forward msg
     case msg @ SaveOrder(order) =>
+      orderStorageActor forward msg
+    case msg @ GetOrder(id) =>
       orderStorageActor forward msg
   }
 

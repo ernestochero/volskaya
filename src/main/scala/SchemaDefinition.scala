@@ -137,6 +137,15 @@ object SchemaDefinition {
     )
   )
 
+  implicit val VolskayaMessageOrderResponseType = ObjectType(
+    "volskayaMessageOrderOutputType",
+    "Format to return getORder request",
+    fields[Unit, VolskayaGetOrderResponse](
+      Field("order", OptionType(OrderType), resolve = _.value.orderDomain),
+      Field("volskayaResponse", VolskayaMessageResponseType, resolve = _.value.volskayaResponse)
+    )
+  )
+
   val LimitArg  = Argument("limit", OptionInputType(IntType), defaultValue = 20)
   val OffsetArg = Argument("offset", OptionInputType(IntType), defaultValue = 0)
 
@@ -198,6 +207,15 @@ object SchemaDefinition {
       arguments = LimitArg :: OffsetArg :: Nil,
       resolve = context => {
         context.ctx.getAllOrders(context.arg(LimitArg), context.arg(OffsetArg))
+      }
+    ),
+    Field(
+      "getOrder",
+      VolskayaMessageOrderResponseType,
+      description = Some("Return a specific User by ID"),
+      arguments = Argument("id", StringType) :: Nil,
+      resolve = context => {
+        context.ctx.getOrder(context.arg("id"))
       }
     )
   )
