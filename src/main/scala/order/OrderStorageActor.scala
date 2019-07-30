@@ -2,31 +2,40 @@ package order
 
 import java.util.concurrent.TimeUnit
 
-import akka.actor.{Actor, ActorLogging}
+import akka.actor.{ Actor, ActorLogging }
 import akka.util.Timeout
 import models.Order
 import models.OrderManagementMessages._
-import org.mongodb.scala.MongoCollection
+import org.mongodb.scala.{ Document, MongoCollection }
 import akka.pattern.pipe
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 import scala.concurrent.duration.Duration
 
-class OrderStorageActor(collection: MongoCollection[Order]) extends Actor with ActorLogging{
+class OrderStorageActor(orderCollection: MongoCollection[Order]) extends Actor with ActorLogging {
   implicit val ec: ExecutionContext = context.system.dispatcher
-  implicit val timeout = Timeout(Duration.create(30, TimeUnit.SECONDS))
+  implicit val timeout              = Timeout(Duration.create(30, TimeUnit.SECONDS))
 
   override def receive: Receive = {
     case SaveOrder(order) =>
-      val result =  collection.insertOne(order)
+      val saveOrderResult = orderCollection
+        .insertOne(order)
         .toFuture()
         .recoverWith { case e => Future.failed(e) }
         .map(_ => order)
-      result.pipeTo(sender())
+      saveOrderResult.pipeTo(sender())
 
     case GetAllOrders(limit, offset) =>
-      val result = collection.find().skip(offset).limit(limit).toFuture()
+      val result = orderCollection.find().skip(offset).limit(limit).toFuture()
       result.pipeTo(sender())
+
+    case GetOrder(id) =>
+      val getOrderResult = orderCollection
+        .find(Document("_id" -> id))
+        .toFuture()
+        .recoverWith { case e => Future.failed(e) }
+        .map(_.headOption)
+      getOrderResult.pipeTo(sender())
 
   }
 }
