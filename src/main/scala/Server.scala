@@ -1,9 +1,8 @@
-import sangria.ast.Document
+import sangria.ast.{ Document, OperationType }
 import sangria.execution.{ ErrorWithResolver, Executor, QueryAnalysisError }
 import sangria.parser.{ QueryParser, SyntaxError }
 import sangria.parser.DeliveryScheme.Try
 import sangria.marshalling.circe._
-import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.Directives._
@@ -19,11 +18,17 @@ import com.typesafe.config.ConfigFactory
 import scala.util.control.NonFatal
 import scala.util.{ Failure, Success }
 import GraphQLRequestUnmarshaller._
+import akka.event.Logging
+import akka.http.scaladsl.marshalling.ToResponseMarshallable
+import akka.stream.actor.{ ActorPublisher, ActorSubscriber }
+import akka.stream.scaladsl.{ Sink, Source }
 import akka.util.Timeout
+import de.heikoseeberger.akkasse.ServerSentEvent
+import de.heikoseeberger.akkasse.EventStreamMarshalling._
+import models.{ Event, OrderEvent, UserEvent }
 import mongodb.Mongo
 import repository.UserRepository
 import sangria.slowlog.SlowLog
-import user.UserManagerAPI
 import volskayaSystem.VolskayaActorSystem._
 import volskayaSystem.VolskayaController
 
@@ -39,29 +44,77 @@ object Server extends App with CorsSupport {
   val config     = ConfigFactory.load()
   val host       = config.getString("http.host")
   val port       = config.getInt("http.port")
+  val logger     = Logging(system, getClass)
+
+  val usersSink = Sink.fromSubscriber(ActorSubscriber[UserEvent](userView))
+  val orderSink = Sink.fromSubscriber(ActorSubscriber[OrderEvent](orderView))
+  val eventStorePublisher = Source
+    .fromPublisher(ActorPublisher[Event](eventStore))
+    .runWith(Sink.asPublisher(fanout = true))
+  // Connect event store to views
+  Source
+    .fromPublisher(eventStorePublisher)
+    .collect { case event: UserEvent => event }
+    .to(usersSink)
+    .run()
 
   def executeGraphQL(query: Document,
                      operationName: Option[String],
                      variables: Option[Json],
-                     tracing: Boolean): StandardRoute =
-    complete(
-      Executor
-        .execute(
-          SchemaDefinition.createSchema,
-          query,
-          VolskayaController(system),
-          variables = variables.getOrElse(Json.obj()),
-          operationName = operationName,
-          middleware =
-            if (tracing) SlowLog.apolloTracing :: Nil
-            else Nil
+                     tracing: Boolean): StandardRoute = {
+    val operation = query.operationType(operationName)
+    operation match {
+      case Some(OperationType.Subscription) =>
+        import sangria.execution.ExecutionScheme.Stream
+        import sangria.streaming.akkaStreams._
+        val executor = Executor(SchemaDefinition.createSchema)
+        complete(
+          executor
+            .prepare(query,
+                     VolskayaController(system, eventStorePublisher),
+                     (),
+                     operationName = operationName,
+                     variables = variables.getOrElse(Json.obj()))
+            .map { preparedQuery =>
+              ToResponseMarshallable(
+                preparedQuery
+                  .execute()
+                  .map(result => ServerSentEvent(result.toString()))
+                  .recover {
+                    case NonFatal(error) =>
+                      logger.error(error, "Unexpected error during event stream processing.")
+                      ServerSentEvent(error.getMessage)
+                  }
+              )
+            }
+            .recover {
+              case error: QueryAnalysisError =>
+                ToResponseMarshallable(BadRequest -> error.resolveError)
+              case error: ErrorWithResolver =>
+                ToResponseMarshallable(InternalServerError -> error.resolveError)
+            }
         )
-        .map(OK -> _)
-        .recover {
-          case error: QueryAnalysisError => BadRequest          -> error.resolveError
-          case error: ErrorWithResolver  => InternalServerError -> error.resolveError
-        }
-    )
+      case _ =>
+        complete(
+          Executor
+            .execute(
+              SchemaDefinition.createSchema,
+              query,
+              VolskayaController(system, eventStorePublisher),
+              variables = variables.getOrElse(Json.obj()),
+              operationName = operationName,
+              middleware =
+                if (tracing) SlowLog.apolloTracing :: Nil
+                else Nil
+            )
+            .map(OK -> _)
+            .recover {
+              case error: QueryAnalysisError => BadRequest          -> error.resolveError
+              case error: ErrorWithResolver  => InternalServerError -> error.resolveError
+            }
+        )
+    }
+  }
 
   def formatError(error: Throwable): Json = error match {
     case syntaxError: SyntaxError =>
@@ -145,6 +198,11 @@ object Server extends App with CorsSupport {
   } ~
   (get & pathEndOrSingleSlash) {
     redirect("/graphql", PermanentRedirect)
+  } ~
+  (get & path("client")) {
+    explicitlyAccepts(`text/html`) {
+      getFromResource("assets/client.html")
+    }
   }
 
   Http().bindAndHandle(corsHandler(route), host, port)

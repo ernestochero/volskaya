@@ -1,5 +1,6 @@
 import akka.stream.Materializer
 import akka.util.Timeout
+import models.OrderManagementEvents.OrderEventCreated
 import models.VolskayaMessages._
 import models._
 import play.api.libs.json.Json
@@ -7,6 +8,7 @@ import sangria.schema._
 import sangria.marshalling.playJson._
 import sangria.macros.derive._
 import volskayaSystem.VolskayaController
+import sangria.streaming.akkaStreams._
 
 import scala.concurrent.ExecutionContext
 
@@ -154,6 +156,19 @@ object SchemaDefinition {
       )
     )
 
+    val EventType = InterfaceType(
+      "Event",
+      "Event InterfaceType Description",
+      () =>
+        fields[Unit, Event](
+          Field("id", StringType, resolve = _.value.id)
+      )
+    )
+
+    val OrderEventCreatedType = deriveObjectType[Unit, OrderEventCreated](
+      Interfaces(EventType)
+    )
+
     val LimitArg  = Argument("limit", OptionInputType(IntType), defaultValue = 20)
     val OffsetArg = Argument("offset", OptionInputType(IntType), defaultValue = 0)
 
@@ -275,8 +290,7 @@ object SchemaDefinition {
         :: Argument("products", ListInputType(ProductInputType))
         :: Argument("price", FloatType)
         :: Argument("distance", FloatType)
-        :: Argument("generalDescription", StringType)
-        :: Nil,
+        :: Argument("generalDescription", StringType) :: Nil,
         resolve = context => {
           context.ctx.registerOrder(
             context.arg("route"),
@@ -297,6 +311,34 @@ object SchemaDefinition {
 
     val MutationType = ObjectType("Mutation", mutationFields)
 
-    Schema(QueryType, Some(MutationType))
+    /** creates a subscription field for a specific event type */
+    def subscriptionField[T <: Event](
+      tpe: ObjectType[VolskayaController, T]
+    ): Field[VolskayaController, Unit] = {
+      val fieldName = tpe.name.head.toLower + tpe.name.tail
+
+      Field.subs(
+        fieldName,
+        tpe,
+        resolve = (c: Context[VolskayaController, Unit]) =>
+          c.ctx.eventStream
+            .filter(event => tpe.valClass.isAssignableFrom(event.getClass))
+            .map(event => Action(event.asInstanceOf[T]))
+      )
+    }
+
+    val SubscriptionType = ObjectType(
+      "Subscription",
+      fields[VolskayaController, Unit](
+        subscriptionField(OrderEventCreatedType),
+        Field.subs(
+          "allEvents",
+          EventType,
+          resolve = _.ctx.eventStream.map(Action(_))
+        )
+      )
+    )
+
+    Schema(QueryType, Some(MutationType), Some(SubscriptionType))
   }
 }

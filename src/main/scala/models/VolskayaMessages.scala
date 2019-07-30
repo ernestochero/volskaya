@@ -1,7 +1,4 @@
 package models
-
-import com.sun.org.apache.xalan.internal.xsltc.compiler.util.ErrorMsg
-
 abstract class FieldId(val name: String) extends Serializable {
   override def toString: String = name
 }

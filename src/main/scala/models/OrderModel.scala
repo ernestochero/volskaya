@@ -4,6 +4,12 @@ import models.PayMethod.Cash
 import org.bson.types.ObjectId
 import org.joda.time.{ DateTime, DateTimeZone }
 
+sealed trait OrderEvent extends Event
+
+object OrderManagementEvents {
+  case class OrderEventCreated(id: String, orders: List[OrderDomain]) extends OrderEvent
+}
+
 // This version just has one route
 case class Order(
   _id: ObjectId = new ObjectId(),

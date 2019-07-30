@@ -1,9 +1,14 @@
 package volskayaSystem
 
+import akka.NotUsed
+import akka.pattern.ask
 import akka.actor.ActorSystem
+import akka.stream.OverflowStrategy
+import akka.stream.scaladsl.Source
 import akka.util.Timeout
 import googleMapsService.model.{ DistanceMatrix, TravelMode, Units }
 import googlefcmservice.model.SendNotification
+import models.OrderManagementEvents.OrderEventCreated
 import models.OrderStateT._
 import models._
 import models.UserManagementExceptions._
@@ -11,20 +16,26 @@ import models.VolskayaMessages._
 import org.joda.time.{ DateTime, DateTimeZone }
 import org.mongodb.scala.bson.ObjectId
 import org.mongodb.scala.result.UpdateResult
+import org.reactivestreams.Publisher
+import user.MemoryEventStore._
 import user.{ OrderManagerAPI, UserManagerAPI }
 
 import scala.concurrent.Future
 import scala.concurrent.duration.{ Duration, SECONDS }
 
-case class VolskayaController(system: ActorSystem) {
+case class VolskayaController(system: ActorSystem, eventStorePublisher: Publisher[Event]) {
 
   val userManagerAPI  = UserManagerAPI(system)
   val orderManagerAPI = OrderManagerAPI(system)
 
-  import system.dispatcher
+  def eventManagementActor = system.actorSelection("/user/eventManagementActor")
+
+  implicit val ec      = system.dispatcher
   implicit val timeout = Timeout(Duration.create(30, SECONDS))
 
   val log = system.log
+  lazy val eventStream: Source[Event, NotUsed] =
+    Source.fromPublisher(eventStorePublisher).buffer(100, OverflowStrategy.fail)
 
   def getAllUsers(limit: Int, offset: Int): Future[Seq[UserDomain]] =
     userManagerAPI.getAllUsers(limit: Int, offset: Int).map(users => users.map(_.asDomain))
@@ -258,6 +269,31 @@ case class VolskayaController(system: ActorSystem) {
   }
 
   // orders section
+  def addOrderSubscriptionEvent(): Future[Unit] = {
+    val result = for {
+      orders <- getAllOrders(10, 0)
+    } yield {
+      (eventManagementActor ? AddEvent(
+        OrderEventCreated(
+          "orderCreated",
+          orders.toList
+        )
+      )).foreach {
+        case EventAdded(event) =>
+          log.debug("The Event Added Successfully {} ", event.id)
+        case OverCapacity(_) =>
+          log.debug("Service is overloaded.")
+        case EventAlreadyExist(event: Event) =>
+          log.debug("The event already exist {}", event.id)
+        case _ =>
+          log.debug("Another.")
+      }
+    }
+    result.recover {
+      case ex =>
+        log.debug("An Error Occurred {}", ex.getMessage)
+    }
+  }
 
   def getAllOrders(limit: Int, offset: Int): Future[Seq[OrderDomain]] =
     orderManagerAPI.getAllOrders(limit, offset).map(orders => orders.map(_.asDomain))
@@ -296,6 +332,7 @@ case class VolskayaController(system: ActorSystem) {
       .saveOrder(orderBuilt)
       .flatMap {
         case order: Order =>
+          addOrderSubscriptionEvent()
           Future.successful(
             VolskayaRegisterResponse(
               Some(order._id.toHexString),
@@ -314,7 +351,6 @@ case class VolskayaController(system: ActorSystem) {
             )
           )
       }
-
   }
 
   def getOrder(id: String): Future[VolskayaGetOrderResponse] =
