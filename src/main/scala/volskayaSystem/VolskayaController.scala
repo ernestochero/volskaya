@@ -6,9 +6,11 @@ import akka.actor.ActorSystem
 import akka.util.Timeout
 import googleMapsService.model.{ DistanceMatrix, TravelMode, Units }
 import googlefcmservice.model.SendNotification
+import models.OrderStateT._
 import models._
 import models.UserManagementExceptions._
 import models.VolskayaMessages._
+import org.joda.time.{ DateTime, DateTimeZone }
 import org.mongodb.scala.bson.ObjectId
 import org.mongodb.scala.result.UpdateResult
 import user.{ OrderManagerAPI, UserManagerAPI }
@@ -271,6 +273,14 @@ case class VolskayaController(system: ActorSystem) {
     distance: Double,
     generalDescription: String
   ): Future[VolskayaRegisterResponse] = {
+
+    val unAssignedStateBuilt = OrderState(
+      nameState = UnAssigned.orderStateName,
+      startTime = Some(DateTime.now(DateTimeZone.UTC).toString),
+      description = Some("waiting by cyclist"),
+      isFinished = false
+    )
+
     val orderBuilt = Order(
       route = Some(route),
       clientId = Some(clientId),
@@ -278,7 +288,10 @@ case class VolskayaController(system: ActorSystem) {
       products = products.toList,
       price = Some(price),
       distance = Some(distance),
-      generalDescription = Some(generalDescription)
+      generalDescription = Some(generalDescription),
+      isPaid = Some(false),
+      orderStates = List(unAssignedStateBuilt),
+      lastState = Some(unAssignedStateBuilt)
     )
 
     orderManagerAPI

@@ -1,8 +1,8 @@
 package models
 
+import models.PayMethod.Cash
 import org.bson.types.ObjectId
 import org.joda.time.{ DateTime, DateTimeZone }
-import play.api.libs.json._
 
 // This version just has one route
 case class Order(
@@ -14,7 +14,7 @@ case class Order(
   distance: Option[Double] = None,
   price: Option[Double] = None,
   orderStates: List[OrderState] = List(),
-  payMethod: Option[String] = None,
+  payMethod: Option[String] = Some(Cash.payMethodName),
   isPaid: Option[Boolean] = None,
   lastState: Option[OrderState] = None,
   products: List[Product] = List(),
@@ -93,14 +93,28 @@ object OrderStateT {
 
   def decodeOrderStateName(name: String): OrderStateT =
     name match {
+      case "unAssigned"        => UnAssigned
       case "assigned"          => Assigned
       case "wayToPickUpOrder"  => WayToPickUpOrder
       case "pickedUpOrder"     => PickedUpOrder
       case "wayToDeliverOrder" => WayToDeliverOrder
-      case "deliveredOrder"    => DeliveredOrder
+      case "deliveredOrder"    => OrderCompleted
+      case "canceledByClient"  => CanceledByClient
+      case "canceledByCyclist" => CanceledByCyclist
       case _                   => throw new Exception("state name don't recognisable")
     }
 
+  case object CanceledByClient extends OrderStateT {
+    override val orderStateName: String = "canceledByClient"
+  }
+
+  case object CanceledByCyclist extends OrderStateT {
+    override val orderStateName: String = "canceledByCyclist"
+  }
+
+  case object UnAssigned extends OrderStateT {
+    override val orderStateName: String = "unAssigned"
+  }
   case object Assigned extends OrderStateT {
     override val orderStateName: String = "assigned"
   }
@@ -117,8 +131,8 @@ object OrderStateT {
     override val orderStateName: String = "wayToDeliverOrder"
   }
 
-  case object DeliveredOrder extends OrderStateT {
-    override val orderStateName: String = "deliveredOrder"
+  case object OrderCompleted extends OrderStateT {
+    override val orderStateName: String = "orderCompleted"
   }
 }
 
@@ -154,7 +168,7 @@ sealed trait CoordinateT {
 case class OrderState(
   nameState: String,
   startTime: Option[String],
-  endTime: Option[String],
+  endTime: Option[String] = None,
   description: Option[String],
   isFinished: Boolean
 )
