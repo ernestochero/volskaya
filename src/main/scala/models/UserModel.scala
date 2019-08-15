@@ -56,7 +56,9 @@ object UserManagementExceptions {
     override def getMessage: String = message
   }
 
-  case class CalculatePriceRouteException(message: String) extends Exception with UserFacingError {
+  case class CalculatePriceRouteException(message: String, error: String = "01")
+      extends Exception
+      with UserFacingError {
     override def getMessage: String = message
   }
 

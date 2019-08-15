@@ -356,46 +356,101 @@ case class VolskayaController(system: ActorSystem) {
       }
   }
 
+  def validateCoordinateIntoArea(coordinate: Coordinate): Boolean = PolygonUtils.inside(coordinate)
+
   def calculatePriceRoute(coordinateStart: Coordinate,
                           coordinateFinish: Coordinate): Future[VolskayaGetPriceResponse] = {
     //TODO optimize this function when we have a geoZone
     def calculateByDistance(distanceMeters: Int): Double = distanceMeters match {
-      case v if v > 0 && v < 2800    => 4.0
-      case v if v > 2900 && v < 3800 => 5.0
-      case v if v > 3900 && v < 4800 => 6.0
-      case v if v > 4900 && v < 5800 => 7.0
-      case v if v > 5900 && v < 6800 => 8.0
-      case v if v > 6900 && v < 7800 => 9.0
-      case _                         => 10.0
+      case v if v > 0 && v < 1500    => 4.0
+      case v if v > 1600 && v < 3000 => 5.0
+      case v if v > 3100 && v < 4000 => 6.0
+      case v if v > 4100 && v < 5000 => 7.0
+      case v if v > 5100 && v < 6000 => 8.0
+      case v if v > 6100 && v < 7000 => 9.0
+      case v if v > 7100 && v < 8000 => 10.0
+      case _                         => 12.0
     }
 
-    userManagerAPI
-      .calculatePriceRoute(coordinateStart, coordinateFinish)
-      .flatMap {
-        case dm: DistanceMatrix if dm.status == "OK" =>
-          val result = for {
-            row     <- dm.rows
-            element <- row.elements
-          } yield {
-            (calculateByDistance(element.distance.value), element.distance.value)
-          }
+    if (validateCoordinateIntoArea(coordinateStart) && validateCoordinateIntoArea(coordinateFinish)) {
+      userManagerAPI
+        .calculatePriceRoute(coordinateStart, coordinateFinish)
+        .flatMap {
+          case dm: DistanceMatrix if dm.status == "OK" =>
+            val res = for {
+              row     <- dm.rows
+              element <- row.elements
+            } yield element.distance.value
 
-          val price    = result.map(_._1).headOption
-          val distance = result.map(_._2).headOption
-          Future.successful(
-            VolskayaGetPriceResponse(price,
-                                     distance,
-                                     VolskayaSuccessResponse(
-                                       responseMessage =
-                                         getSuccessCalculateMessage(models.PriceFieldId)
-                                     ))
+            val distance            = res.headOption
+            val isDistanceOverLimit = distance.getOrElse(0) > 10000
+            val price               = if (isDistanceOverLimit) None else distance.map(calculateByDistance)
+            if (isDistanceOverLimit) {
+              Future.failed(
+                CalculatePriceRouteException(
+                  message = "Route exceeds the limit of 10 kilometers",
+                  error = "03"
+                )
+              )
+            } else if (distance.nonEmpty && price.nonEmpty) {
+              Future.successful(
+                VolskayaGetPriceResponse(price,
+                                         distance,
+                                         VolskayaSuccessResponse(
+                                           responseMessage =
+                                             getSuccessCalculateMessage(models.PriceFieldId)
+                                         ))
+              )
+            } else {
+              Future.failed(
+                CalculatePriceRouteException(
+                  message = getFailedCalculateMessage(PriceFieldId)
+                )
+              )
+            }
+          case _ =>
+            Future.failed(
+              CalculatePriceRouteException(
+                message = getFailedCalculateMessage(PriceFieldId)
+              )
+            )
+        }
+        .recoverWith {
+          case exception: CalculatePriceRouteException =>
+            Future.successful(
+              VolskayaGetPriceResponse(
+                None,
+                None,
+                VolskayaFailedResponse(
+                  responseMessage = exception.getMessage,
+                  responseCode = exception.error
+                )
+              )
+            )
+          case ex =>
+            Future.successful(
+              VolskayaGetPriceResponse(
+                None,
+                None,
+                VolskayaFailedResponse(
+                  responseMessage = ex.getMessage
+                )
+              )
+            )
+        }
+    } else {
+      Future.successful(
+        VolskayaGetPriceResponse(
+          None,
+          None,
+          VolskayaFailedResponse(
+            responseMessage = "Delivery out of range",
+            responseCode = "02"
           )
-        case _ =>
-          Future.failed(CalculatePriceRouteException(getFailedSendVerificationCode))
-      }
-      .recoverWith {
-        case ex => Future.failed(ex)
-      }
+        )
+      )
+    }
+
   }
 
   // orders section
