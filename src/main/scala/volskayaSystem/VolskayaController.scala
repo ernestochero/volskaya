@@ -362,14 +362,14 @@ case class VolskayaController(system: ActorSystem) {
                           coordinateFinish: Coordinate): Future[VolskayaGetPriceResponse] = {
     //TODO optimize this function when we have a geoZone
     def calculateByDistance(distanceMeters: Int): Double = distanceMeters match {
-      case v if v > 0 && v < 1500    => 4.0
-      case v if v > 1600 && v < 3000 => 5.0
-      case v if v > 3100 && v < 4000 => 6.0
-      case v if v > 4100 && v < 5000 => 7.0
-      case v if v > 5100 && v < 6000 => 8.0
-      case v if v > 6100 && v < 7000 => 9.0
-      case v if v > 7100 && v < 8000 => 10.0
-      case _                         => 12.0
+      case v if v > 0 && v <= 1599     => 4.0
+      case v if v >= 1600 && v <= 3099 => 5.0
+      case v if v >= 3100 && v <= 4099 => 6.0
+      case v if v >= 4100 && v <= 5099 => 7.0
+      case v if v >= 5100 && v <= 6099 => 8.0
+      case v if v >= 6100 && v <= 7099 => 9.0
+      case v if v >= 7100 && v <= 8099 => 10.0
+      case _                           => 12.0
     }
 
     if (validateCoordinateIntoArea(coordinateStart) && validateCoordinateIntoArea(coordinateFinish)) {
