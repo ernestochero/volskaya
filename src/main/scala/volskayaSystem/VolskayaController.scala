@@ -383,9 +383,18 @@ case class VolskayaController(system: ActorSystem) {
             } yield element.distance.value
 
             val distance            = res.headOption
-            val isDistanceOverLimit = distance.getOrElse(0) > 10000
+            val isDistanceOverLimit = distance.fold(false)(_ > 10000)
+            val isDistanceZero      = distance.fold(false)(_ == 0)
             val price               = if (isDistanceOverLimit) None else distance.map(calculateByDistance)
-            if (isDistanceOverLimit) {
+
+            if (isDistanceZero) {
+              Future.failed(
+                CalculatePriceRouteException(
+                  message = "Distance can't be zero",
+                  error = "04"
+                )
+              )
+            } else if (isDistanceOverLimit) {
               Future.failed(
                 CalculatePriceRouteException(
                   message = "Route exceeds the limit of 10 kilometers",
