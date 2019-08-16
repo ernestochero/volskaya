@@ -21,7 +21,6 @@ import scala.util.{ Failure, Success }
 import GraphQLRequestUnmarshaller._
 import akka.util.Timeout
 import mongodb.Mongo
-import repository.UserRepository
 import sangria.slowlog.SlowLog
 import user.UserManagerAPI
 import volskayaSystem.VolskayaActorSystem._
@@ -35,10 +34,9 @@ object Server extends App with CorsSupport {
   implicit val materializer = ActorMaterializer()
   implicit val ec           = system.dispatcher
 
-  val repository = new UserRepository(Mongo.usersCollection)
-  val config     = ConfigFactory.load()
-  val host       = config.getString("http.host")
-  val port       = config.getInt("http.port")
+  val config = ConfigFactory.load()
+  val host   = config.getString("http.host")
+  val port   = config.getInt("http.port")
 
   def executeGraphQL(query: Document,
                      operationName: Option[String],
