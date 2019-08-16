@@ -382,11 +382,12 @@ case class VolskayaController(system: ActorSystem) {
               element <- row.elements
             } yield element.distance.value
 
-            val distance            = res.headOption
-            val isDistanceOverLimit = distance.fold(false)(_ > 10000)
-            val isDistanceZero      = distance.fold(false)(_ == 0)
-            val price               = if (isDistanceOverLimit) None else distance.map(calculateByDistance)
-
+            val distance             = res.headOption
+            val isDistanceOverLimit  = distance.fold(false)(_ > 10000)
+            val isDistanceZero       = distance.fold(false)(_ == 0)
+            lazy val price           = if (isDistanceOverLimit) None else distance.map(calculateByDistance)
+            lazy val co2Saved        = distance.map(_ * 0.000133) // co2 per meters
+            lazy val approximateTime = distance.map(_ / 250.0) // in minutes , by default 15km per hour
             if (isDistanceZero) {
               Future.failed(
                 CalculatePriceRouteException(
@@ -405,6 +406,8 @@ case class VolskayaController(system: ActorSystem) {
               Future.successful(
                 VolskayaGetPriceResponse(price,
                                          distance,
+                                         co2Saved,
+                                         approximateTime,
                                          VolskayaSuccessResponse(
                                            responseMessage =
                                              getSuccessCalculateMessage(models.PriceFieldId)
@@ -428,9 +431,7 @@ case class VolskayaController(system: ActorSystem) {
           case exception: CalculatePriceRouteException =>
             Future.successful(
               VolskayaGetPriceResponse(
-                None,
-                None,
-                VolskayaFailedResponse(
+                volskayaResponse = VolskayaFailedResponse(
                   responseMessage = exception.getMessage,
                   responseCode = exception.error
                 )
@@ -439,9 +440,7 @@ case class VolskayaController(system: ActorSystem) {
           case ex =>
             Future.successful(
               VolskayaGetPriceResponse(
-                None,
-                None,
-                VolskayaFailedResponse(
+                volskayaResponse = VolskayaFailedResponse(
                   responseMessage = ex.getMessage
                 )
               )
@@ -450,9 +449,7 @@ case class VolskayaController(system: ActorSystem) {
     } else {
       Future.successful(
         VolskayaGetPriceResponse(
-          None,
-          None,
-          VolskayaFailedResponse(
+          volskayaResponse = VolskayaFailedResponse(
             responseMessage = "Delivery out of range",
             responseCode = "02"
           )

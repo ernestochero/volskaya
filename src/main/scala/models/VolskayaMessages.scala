@@ -1,5 +1,7 @@
 package models
 
+import java.util.Spliterator.OfPrimitive
+
 import com.sun.org.apache.xalan.internal.xsltc.compiler.util.ErrorMsg
 
 abstract class FieldId(val name: String) extends Serializable {
@@ -71,8 +73,10 @@ object VolskayaMessages {
   case class VolskayaFailedResponse(responseCode: String = "01", responseMessage: String)
       extends VolskayaResponse
 
-  case class VolskayaGetPriceResponse(price: Option[Double],
-                                      distance: Option[Int],
+  case class VolskayaGetPriceResponse(price: Option[Double] = None,
+                                      distance: Option[Int] = None,
+                                      co2Saved: Option[Double] = None,
+                                      approximateTime: Option[Double] = None,
                                       volskayaResponse: VolskayaResponse)
 
   case class VolskayaGetUserResponse(userDomain: Option[UserDomain],
