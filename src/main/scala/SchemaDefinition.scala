@@ -159,6 +159,17 @@ object SchemaDefinition {
     val LimitArg  = Argument("limit", OptionInputType(IntType), defaultValue = 20)
     val OffsetArg = Argument("offset", OptionInputType(IntType), defaultValue = 0)
 
+    val miscellaneousFieldQueries = fields[VolskayaController, Unit](
+      Field(
+        "wakeUpHeroku",
+        StringType,
+        description = Some("lets wake up heroku"),
+        resolve = context => {
+          context.ctx.wakeUpHeroku()
+        }
+      )
+    )
+
     val userFieldQueries = fields[VolskayaController, Unit](
       Field(
         "allUsers",
@@ -293,7 +304,8 @@ object SchemaDefinition {
       )
     )
 
-    val QueryType = ObjectType("Query", userFieldQueries ++ ordersFieldQueries)
+    val QueryType =
+      ObjectType("Query", userFieldQueries ++ ordersFieldQueries ++ miscellaneousFieldQueries)
 
     val mutationFields = userFieldMutations ++ orderFieldMutations
 

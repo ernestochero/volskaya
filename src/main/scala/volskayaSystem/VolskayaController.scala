@@ -174,6 +174,9 @@ case class VolskayaController(system: ActorSystem) {
   def getAllUsers(limit: Int, offset: Int): Future[Seq[UserDomain]] =
     userManagerAPI.getAllUsers(limit: Int, offset: Int).map(users => users.map(_.asDomain))
 
+  def wakeUpHeroku(): Future[String] =
+    Future.successful("I'm awake")
+
   def getUser(id: String): Future[VolskayaGetUserResponse] =
     userManagerAPI
       .getUser(id)
