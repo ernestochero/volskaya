@@ -385,12 +385,19 @@ case class VolskayaController(system: ActorSystem) {
               element <- row.elements
             } yield element.distance.value
 
-            val distance             = res.headOption
-            val isDistanceOverLimit  = distance.fold(false)(_ > 10000)
-            val isDistanceZero       = distance.fold(false)(_ == 0)
-            lazy val price           = if (isDistanceOverLimit) None else distance.map(calculateByDistance)
-            lazy val co2Saved        = distance.map(_ * 0.000133) // co2 per meters
-            lazy val approximateTime = distance.map(_ / 250.0) // in minutes , by default 15km per hour
+            val distance            = res.headOption
+            val isDistanceOverLimit = distance.fold(false)(_ > 10000)
+            val isDistanceZero      = distance.fold(false)(_ == 0)
+            lazy val price          = if (isDistanceOverLimit) None else distance.map(calculateByDistance)
+            lazy val co2Saved = distance.map(n => {
+              val x = (n * 83.71847) / 1000
+              Math.round(x * 100) / 100.0
+            }) // g/km // 83.71847 g/km
+            lazy val approximateTime = distance.map(n => Math.round(n / 250.0).toDouble) // in minutes , by default 15km per hour
+            lazy val distanceInKilometers = distance.map(c => {
+              val x = c / 1000.toDouble
+              Math.round(x * 10) / 10.0
+            })
             if (isDistanceZero) {
               Future.failed(
                 CalculatePriceRouteException(
@@ -407,14 +414,15 @@ case class VolskayaController(system: ActorSystem) {
               )
             } else if (distance.nonEmpty && price.nonEmpty) {
               Future.successful(
-                VolskayaGetPriceResponse(price,
-                                         distance,
-                                         co2Saved,
-                                         approximateTime,
-                                         VolskayaSuccessResponse(
-                                           responseMessage =
-                                             getSuccessCalculateMessage(models.PriceFieldId)
-                                         ))
+                VolskayaGetPriceResponse(
+                  price,
+                  distanceInKilometers,
+                  co2Saved,
+                  approximateTime,
+                  VolskayaSuccessResponse(
+                    responseMessage = getSuccessCalculateMessage(models.PriceFieldId)
+                  )
+                )
               )
             } else {
               Future.failed(

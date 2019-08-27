@@ -113,7 +113,7 @@ object SchemaDefinition {
       "Format to return getPrice request",
       fields[Unit, VolskayaGetPriceResponse](
         Field("price", OptionType(FloatType), resolve = _.value.price),
-        Field("distance", OptionType(IntType), resolve = _.value.distance),
+        Field("distance", OptionType(FloatType), resolve = _.value.distance),
         Field("co2Saved", OptionType(FloatType), resolve = _.value.co2Saved),
         Field("approximateTime", OptionType(FloatType), resolve = _.value.approximateTime),
         Field("volskayaResponse", VolskayaMessageResponseType, resolve = _.value.volskayaResponse)

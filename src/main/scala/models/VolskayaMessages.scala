@@ -74,7 +74,7 @@ object VolskayaMessages {
       extends VolskayaResponse
 
   case class VolskayaGetPriceResponse(price: Option[Double] = None,
-                                      distance: Option[Int] = None,
+                                      distance: Option[Double] = None,
                                       co2Saved: Option[Double] = None,
                                       approximateTime: Option[Double] = None,
                                       volskayaResponse: VolskayaResponse)
