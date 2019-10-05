@@ -396,7 +396,7 @@ case class VolskayaController(system: ActorSystem) {
             lazy val approximateTime = distance.map(n => Math.round(n / 250.0).toDouble) // in minutes , by default 15km per hour
             lazy val distanceInKilometers = distance.map(c => {
               val x = c / 1000.toDouble
-              Math.round(x * 10) / 10.0
+              Math.floor(x * 10) / 10.0
             })
             if (isDistanceZero) {
               Future.failed(
