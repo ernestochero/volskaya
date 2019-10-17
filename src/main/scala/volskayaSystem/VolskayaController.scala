@@ -360,6 +360,34 @@ case class VolskayaController(system: ActorSystem) {
   }
 
   def validateCoordinateIntoArea(coordinate: Coordinate): Boolean = PolygonUtils.inside(coordinate)
+  def calculateApproximateTime(distance: Int): Double             = Math.round(distance / 250.0).toDouble
+  def calculateDistanceInKilometers(distance: Int): Double = {
+    val x = distance / 1000.toDouble
+    Math.floor(x * 10) / 10.0
+  }
+  def calculateCO2Saved(distance: Int): Double = {
+    val x = (distance * 83.71847) / 1000
+    Math.round(x * 100) / 100.0
+  }
+  def extractDistanceFromDistanceMatrix(distanceMatrix: DistanceMatrix): Future[Option[Int]] =
+    distanceMatrix.status match {
+      case "OK" =>
+        val result = for {
+          row     <- distanceMatrix.rows
+          element <- row.elements
+        } yield element.distance.value
+        Future.successful(result.headOption)
+      case _ =>
+        Future.failed(
+          CalculatePriceRouteException(
+            message = s"Status: ${distanceMatrix.status} of distanceMatrix is not OK ",
+            error = "05"
+          )
+        )
+    }
+
+  def isDistanceZero(distance: Option[Int]): Boolean      = distance.getOrElse(0) == 0
+  def isDistanceOverLimit(distance: Option[Int]): Boolean = distance.getOrElse(0) > 10000
 
   def calculatePriceRoute(coordinateStart: Coordinate,
                           coordinateFinish: Coordinate): Future[VolskayaGetPriceResponse] = {
@@ -375,88 +403,81 @@ case class VolskayaController(system: ActorSystem) {
       case _                           => 12.0
     }
 
-    if (validateCoordinateIntoArea(coordinateStart) && validateCoordinateIntoArea(coordinateFinish)) {
-      userManagerAPI
-        .calculatePriceRoute(coordinateStart, coordinateFinish)
-        .flatMap {
-          case dm: DistanceMatrix if dm.status == "OK" =>
-            val res = for {
-              row     <- dm.rows
-              element <- row.elements
-            } yield element.distance.value
+    def buildGetPriceResponse(initialDistance: Option[Int],
+                              secondDistance: Option[Int]): Future[VolskayaGetPriceResponse] = {
+      val distanceInKilometers   = secondDistance.map(calculateDistanceInKilometers)
+      val approximateTime        = secondDistance.map(calculateApproximateTime)
+      val co2Saved               = secondDistance.map(calculateCO2Saved)
+      val approximateInitialTime = initialDistance.map(calculateApproximateTime)
+      if (isDistanceZero(secondDistance)) {
+        Future.failed(
+          CalculatePriceRouteException(
+            message = "Distance can't be zero",
+            error = "04"
+          )
+        )
+      } else if (isDistanceOverLimit(secondDistance)) {
+        Future.failed(
+          CalculatePriceRouteException(
+            message = "Route exceeds the limit of 10 kilometers",
+            error = "03"
+          )
+        )
+      } else {
+        val approximateFinalTime = for {
+          time        <- approximateTime
+          initialTime <- approximateInitialTime
+        } yield time + initialTime
+        val price = secondDistance.map(calculateByDistance)
+        Future.successful(
+          VolskayaGetPriceResponse(
+            price,
+            distanceInKilometers,
+            co2Saved,
+            approximateFinalTime,
+            VolskayaSuccessResponse(
+              responseMessage = getSuccessCalculateMessage(models.PriceFieldId)
+            )
+          )
+        )
+      }
+    }
 
-            val distance            = res.headOption
-            val isDistanceOverLimit = distance.fold(false)(_ > 10000)
-            val isDistanceZero      = distance.fold(false)(_ == 0)
-            lazy val price          = if (isDistanceOverLimit) None else distance.map(calculateByDistance)
-            lazy val co2Saved = distance.map(n => {
-              val x = (n * 83.71847) / 1000
-              Math.round(x * 100) / 100.0
-            }) // g/km // 83.71847 g/km
-            lazy val approximateTime = distance.map(n => Math.round(n / 250.0).toDouble) // in minutes , by default 15km per hour
-            lazy val distanceInKilometers = distance.map(c => {
-              val x = c / 1000.toDouble
-              Math.floor(x * 10) / 10.0
-            })
-            if (isDistanceZero) {
-              Future.failed(
-                CalculatePriceRouteException(
-                  message = "Distance can't be zero",
-                  error = "04"
-                )
-              )
-            } else if (isDistanceOverLimit) {
-              Future.failed(
-                CalculatePriceRouteException(
-                  message = "Route exceeds the limit of 10 kilometers",
-                  error = "03"
-                )
-              )
-            } else if (distance.nonEmpty && price.nonEmpty) {
-              Future.successful(
-                VolskayaGetPriceResponse(
-                  price,
-                  distanceInKilometers,
-                  co2Saved,
-                  approximateTime,
-                  VolskayaSuccessResponse(
-                    responseMessage = getSuccessCalculateMessage(models.PriceFieldId)
-                  )
-                )
-              )
-            } else {
-              Future.failed(
-                CalculatePriceRouteException(
-                  message = getFailedCalculateMessage(PriceFieldId)
-                )
-              )
-            }
-          case _ =>
-            Future.failed(
-              CalculatePriceRouteException(
-                message = getFailedCalculateMessage(PriceFieldId)
+    if (validateCoordinateIntoArea(coordinateStart) && validateCoordinateIntoArea(coordinateFinish)) {
+      val resultPriceResponse = for {
+        distanceFastbiciToPickUpLocation <- userManagerAPI.calculateDistanceRoute(
+          Constants.fastBiciCoordinate,
+          coordinateStart
+        )
+        distancePickUptoLeaveLocation <- userManagerAPI.calculateDistanceRoute(
+          coordinateStart,
+          coordinateFinish
+        )
+        initialDistance <- extractDistanceFromDistanceMatrix(distanceFastbiciToPickUpLocation)
+        secondDistance  <- extractDistanceFromDistanceMatrix(distancePickUptoLeaveLocation)
+        if initialDistance.isDefined && secondDistance.isDefined
+        priceResponse <- buildGetPriceResponse(initialDistance, secondDistance)
+      } yield priceResponse
+
+      resultPriceResponse.recoverWith {
+        case exception: CalculatePriceRouteException =>
+          Future.successful(
+            VolskayaGetPriceResponse(
+              volskayaResponse = VolskayaFailedResponse(
+                responseMessage = exception.getMessage,
+                responseCode = exception.error
               )
             )
-        }
-        .recoverWith {
-          case exception: CalculatePriceRouteException =>
-            Future.successful(
-              VolskayaGetPriceResponse(
-                volskayaResponse = VolskayaFailedResponse(
-                  responseMessage = exception.getMessage,
-                  responseCode = exception.error
-                )
+          )
+        case ex =>
+          Future.successful(
+            VolskayaGetPriceResponse(
+              volskayaResponse = VolskayaFailedResponse(
+                responseMessage = ex.getMessage
               )
             )
-          case ex =>
-            Future.successful(
-              VolskayaGetPriceResponse(
-                volskayaResponse = VolskayaFailedResponse(
-                  responseMessage = ex.getMessage
-                )
-              )
-            )
-        }
+          )
+      }
     } else {
       Future.successful(
         VolskayaGetPriceResponse(
@@ -467,11 +488,9 @@ case class VolskayaController(system: ActorSystem) {
         )
       )
     }
-
   }
 
   // orders section
-
   def getAllOrders(limit: Int, offset: Int): Future[Seq[OrderDomain]] =
     orderManagerAPI.getAllOrders(limit, offset).map(orders => orders.map(_.asDomain))
 

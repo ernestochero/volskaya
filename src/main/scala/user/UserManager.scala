@@ -55,8 +55,8 @@ case class UserManagerAPI(system: ActorSystem) {
   def saveUser(user: User): Future[User] =
     (userManagementActor ? SaveUser(user)).mapTo[User]
 
-  def calculatePriceRoute(coordinateStart: Coordinate,
-                          coordinateFinish: Coordinate): Future[DistanceMatrix] =
+  def calculateDistanceRoute(coordinateStart: Coordinate,
+                             coordinateFinish: Coordinate): Future[DistanceMatrix] =
     (userManagementActor ? CalculatePriceRoute(coordinateStart, coordinateFinish))
       .mapTo[DistanceMatrix]
 
