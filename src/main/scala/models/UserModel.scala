@@ -62,6 +62,8 @@ object UserManagementExceptions {
     override def getMessage: String = message
   }
 
+  case class VolskayaAPIException(message: String) extends Exception
+
 }
 
 case class Device(name: String, number: String, imei: String, token: Option[String] = None)

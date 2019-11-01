@@ -7,7 +7,7 @@ description := "GraphQL server written with caliban - Volskaya."
 scalaVersion := "2.12.10"
 resolvers += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
 scalacOptions ++= Seq("-deprecation", "-feature")
-
+scalacOptions ++= Seq("-Ypartial-unification")
 val akkaVersion = "2.5.19"
 val akkaHttpVersion = "10.1.8"
 val calibanVersion = "0.2.0"

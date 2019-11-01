@@ -1,9 +1,5 @@
 package models
-
-import java.util.Spliterator.OfPrimitive
-
-import com.sun.org.apache.xalan.internal.xsltc.compiler.util.ErrorMsg
-
+import scala.language.higherKinds
 abstract class FieldId(val name: String) extends Serializable {
   override def toString: String = name
 }
@@ -82,11 +78,15 @@ object VolskayaMessages {
   case class VolskayaGetUserResponse(userDomain: Option[UserDomain],
                                      volskayaResponse: VolskayaResponse)
 
+  case class VolskayaGetUserResponse2(userDomain: Option[User], volskayaResponse: VolskayaResponse)
+
   case class VolskayaLoginResponse(id: Option[String], volskayaResponse: VolskayaResponse)
 
   case class VolskayaRegisterResponse(id: Option[String], volskayaResponse: VolskayaResponse)
 
   case class VolskayaGetOrderResponse(orderDomain: Option[OrderDomain],
                                       volskayaResponse: VolskayaResponse)
+
+  case class VolskayaResultSuccessResponse[F[_], A](value: F[A], volskayaResponse: VolskayaResponse)
 
 }

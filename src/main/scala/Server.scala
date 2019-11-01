@@ -35,8 +35,8 @@ object Server extends App with CorsSupport {
   implicit val ec           = system.dispatcher
 
   val config = ConfigFactory.load()
-  val host   = config.getString("http.host")
-  val port   = config.getInt("http.port")
+  val host   = config.getString("http-conf.host")
+  val port   = config.getInt("http-conf.port")
 
   def executeGraphQL(query: Document,
                      operationName: Option[String],
