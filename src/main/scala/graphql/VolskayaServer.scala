@@ -33,7 +33,16 @@ object VolskayaServer extends CatsApp with GenericSchema[Console with Clock] {
       RootResolver(
         Queries(
           args => service.getUser(args.id),
-          args => service.getAllUsers(args.limit, args.offset)
+          args => service.getAllUsers(args.limit, args.offset),
+          service.wakeUpVolskaya
+        ),
+        Mutations(
+          args =>
+            service.updatePassword(
+              args.id,
+              args.oldPassword,
+              args.newPassword
+          )
         )
       )
     )

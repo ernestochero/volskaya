@@ -2,7 +2,7 @@ package graphql
 import zio.{ RIO, ZIO }
 import zio.console.Console
 import UserCollectionModule._
-import models.{ FavoriteSite, PersonalInformation, User }
+import models.{ FavoriteSite, PasswordField, PersonalInformation, User }
 import org.mongodb.scala.MongoCollection
 import commons.Transformers._
 import models.UserManagementExceptions.VolskayaAPIException
@@ -11,11 +11,13 @@ import models.VolskayaMessages.{
   VolskayaResultSuccessResponse,
   VolskayaSuccessResponse,
   getSuccessGetMessage,
+  getSuccessUpdateMessage,
   getUserNotExistMessage
 }
 import mongodb.Mongo
 import org.mongodb.scala.bson.ObjectId
-import org.mongodb.scala.bson.collection.immutable.Document
+import org.mongodb.scala.result.UpdateResult
+import org.mongodb.scala.bson.Document
 
 import scala.concurrent.{ ExecutionContext, Future }
 
@@ -23,11 +25,18 @@ sealed trait Operation {
   def getAllUsersFromDatabase(limit: Int, offset: Int): RIO[Console, List[User]]
   def wakeUpHeroku: RIO[Console, String] = RIO.succeed("I'm awake")
   def getUserFromDatabase(id: String): RIO[Console, Option[User]]
+  def updatePasswordDatabase(id: String,
+                             oldPassword: String,
+                             newPassword: String): RIO[Console, UpdateResult]
+  def updateEmailDatabase(id: String, email: String): RIO[Console, UpdateResult]
+  def updatePersonalInformationDatabase(
+    id: String,
+    personalInformation: PersonalInformation
+  ): RIO[Console, UpdateResult]
+
+  def updateFavoriteSiteDatabase(id: String, favoriteSite: FavoriteSite): RIO[Console, UpdateResult]
+
   /*  def verifyLoginAgainstDatabase(email: String, password: String)
-  def updateEmailDatabase(id: String, email: String)
-  def updatePasswordDatabase(id: String, oldPassword: String, newPassword: String)
-  def updatePersonalInformationDatabase(id: String, personalInformation: PersonalInformation)
-  def addFavoriteSiteDatabase(id: String, favoriteSite: FavoriteSite)
   def storeVerificationCodeDatabase(id: String, verificationCode: String)
   def checkVerificationCodeDatabase(id: String, verificationCode: String)*/
 }
@@ -50,6 +59,66 @@ object UserCollectionModule {
         .map(_.headOption)
         .toRIO
     }
+
+    override def updatePasswordDatabase(id: String,
+                                        oldPassword: String,
+                                        newPassword: String): RIO[Console, UpdateResult] = {
+      val filter = Document("_id"  -> new ObjectId(id), "password" -> oldPassword)
+      val update = Document("$set" -> Document("password" -> newPassword))
+      userMongoCollection
+        .updateOne(filter, update)
+        .toFuture()
+        .recoverWith { case e => Future.failed(e) }
+        .toRIO
+    }
+
+    override def updateEmailDatabase(id: String, email: String): zio.RIO[Console, UpdateResult] = {
+      val filter = Document("_id"  -> new ObjectId(id))
+      val update = Document("$set" -> Document("email" -> email))
+      userMongoCollection
+        .updateOne(filter, update)
+        .toFuture()
+        .recoverWith { case e => Future.failed(e) }
+        .toRIO
+    }
+
+    override def updatePersonalInformationDatabase(
+      id: String,
+      personalInformation: PersonalInformation
+    ): zio.RIO[Console, UpdateResult] = {
+      val filter = Document("_id" -> new ObjectId(id))
+      val fields = Document(
+        "firstName" -> personalInformation.firstName,
+        "lastName"  -> personalInformation.lastName,
+        "dni"       -> personalInformation.dni
+      )
+      val update = Document("$set" -> Document("personalInformation" -> fields))
+      userMongoCollection
+        .updateOne(filter, update)
+        .toFuture()
+        .recoverWith { case e => Future.failed(e) }
+        .toRIO
+    }
+
+    override def updateFavoriteSiteDatabase(
+      id: String,
+      favoriteSite: FavoriteSite
+    ): zio.RIO[Console, UpdateResult] = {
+      val filter = Document("_id" -> new ObjectId(id))
+      val favoriteSiteField = Document(
+        "coordinate" -> Document("latitude" -> favoriteSite.coordinate.latitude,
+                                 "longitude" -> favoriteSite.coordinate.longitude),
+        "name"    -> favoriteSite.name,
+        "address" -> favoriteSite.address
+      )
+      val update = Document("$push" -> Document("favoriteSites" -> favoriteSiteField))
+      userMongoCollection
+        .updateOne(filter, update)
+        .toFuture()
+        .recoverWith { case e => Future.failed(e) }
+        .toRIO
+    }
+
   }
 
   case class UserCollection(userMongoCollection: MongoCollection[User]) {
@@ -87,9 +156,34 @@ object UserCollectionModule {
           VolskayaSuccessResponse(responseMessage = "Users Extracted successfully")
         )
       } yield volskayaResult
-  }
 
-  //case class UserCollection(mongoCollection: MongoCollection[User])
+    def updatePassword(
+      id: String,
+      oldPassword: String,
+      newPassword: String
+    ): ZIO[Console, VolskayaAPIException, VolskayaResultSuccessResponse[Option, String]] =
+      for {
+        updateResult <- userOperation
+          .updatePasswordDatabase(
+            id,
+            oldPassword,
+            newPassword
+          )
+          .mapError(e => VolskayaAPIException(e.getMessage))
+        volskayaResult = VolskayaResultSuccessResponse[Option, String](
+          Some(id),
+          if (updateResult.getMatchedCount == 1 && updateResult.wasAcknowledged()) {
+            VolskayaSuccessResponse(
+              responseMessage = getSuccessUpdateMessage(fieldId = PasswordField)
+            )
+          } else {
+            VolskayaFailedResponse(
+              responseMessage = getUserNotExistMessage
+            )
+          }
+        )
+      } yield volskayaResult
+  }
 
   trait Service[R] {
     def userCollection(

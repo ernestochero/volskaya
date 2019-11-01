@@ -4,7 +4,7 @@ import caliban.schema.Annotations.GQLDescription
 import models.User
 import models.UserManagementExceptions.VolskayaAPIException
 import models.VolskayaMessages.VolskayaResultSuccessResponse
-import zio.ZIO
+import zio.{ UIO, ZIO }
 import zio.console.Console
 
 case class idArg(id: String)
@@ -17,5 +17,7 @@ case class Queries(
   @GQLDescription("Volskaya return a list of users")
   getAllUsers: limitOffsetArg => ZIO[Console,
                                      VolskayaAPIException,
-                                     VolskayaResultSuccessResponse[List, User]]
+                                     VolskayaResultSuccessResponse[List, User]],
+  @GQLDescription("Volskaya return a list of users")
+  wakeUpHeroku: UIO[String]
 )

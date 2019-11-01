@@ -10,6 +10,8 @@ import zio.stream.ZStream
 case class VolskayaService(userCollection: Ref[UserCollection],
                            subscribers: Ref[List[Queue[String]]]) {
 
+  def wakeUpVolskaya: UIO[String] = UIO.succeed("I'm awake")
+
   def getAllUsers(
     limit: Int,
     offset: Int
@@ -23,6 +25,15 @@ case class VolskayaService(userCollection: Ref[UserCollection],
   ): ZIO[Console, VolskayaAPIException, VolskayaResultSuccessResponse[Option, User]] =
     userCollection.get.flatMap(
       _.getUser(id)
+    )
+
+  def updatePassword(
+    id: String,
+    oldPassword: String,
+    newPassword: String
+  ): ZIO[Console, VolskayaAPIException, VolskayaResultSuccessResponse[Option, String]] =
+    userCollection.get.flatMap(
+      _.updatePassword(id, oldPassword, newPassword)
     )
 
   def userAddedEvent: ZStream[Any, Nothing, String] = ZStream.unwrap {
