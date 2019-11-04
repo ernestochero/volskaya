@@ -3,7 +3,7 @@ package user
 import akka.pattern.ask
 import akka.actor.{ Actor, ActorLogging, ActorRef, ActorSystem, Props }
 import akka.util.Timeout
-import googleMapsService.{ ContextFCM, ContextGoogleMaps, DistanceMatrixApi }
+import googleMapsService.{ ContextFCM, DistanceMatrixApi, GoogleMapsContext }
 import googlefcmservice.SendNotificationApi
 import models._
 import akka.pattern.pipe
@@ -63,7 +63,7 @@ case class UserManagerAPI(system: ActorSystem) {
 }
 
 class UserManager(userCollection: MongoCollection[User],
-                  googleMapsContext: ContextGoogleMaps,
+                  googleMapsContext: GoogleMapsContext,
                   fcmContext: ContextFCM)
     extends Actor
     with ActorLogging {

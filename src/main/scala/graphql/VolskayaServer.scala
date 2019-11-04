@@ -2,7 +2,8 @@ package graphql
 import caliban.schema.{ ArgBuilder, GenericSchema, Schema }
 import caliban.GraphQL._
 import caliban.{ Http4sAdapter, RootResolver }
-import modules.ConfigurationModule
+import googleMapsService.GoogleMapsContext
+import modules.{ ConfigurationModule, GoogleMapsModule, UserCollectionModule }
 import org.mongodb.scala.bson.ObjectId
 import zio.{ RIO, ZIO }
 import zio.clock.Clock
@@ -15,26 +16,35 @@ import org.http4s.server.middleware.CORS
 import zio.blocking.Blocking
 import zio.random.Random
 import zio.system.System
+
 import scala.language.higherKinds
 object VolskayaServer extends CatsApp with GenericSchema[Console with Clock] {
   type VolskayaTask[A] = RIO[Console with Clock, A]
   implicit val objectIdSchema     = Schema.stringSchema.contramap[ObjectId](_.toHexString)
   implicit val objectIdArgBuilder = ArgBuilder.string.map(new ObjectId(_))
 
-  val logic: ZIO[zio.ZEnv with UserCollectionModule with ConfigurationModule, Nothing, Int] = (for {
+  val logic: ZIO[zio.ZEnv with UserCollectionModule with ConfigurationModule with GoogleMapsModule,
+                 Nothing,
+                 Int] = (for {
     configuration <- ConfigurationModule.factory.configuration
     userCollection <- UserCollectionModule.factory.userCollection(
       configuration.mongoConf.uri,
       configuration.mongoConf.database,
       configuration.mongoConf.userCollection
     )
-    service <- VolskayaService.make(userCollection)
+    googleMapsService <- GoogleMapsModule.factory.googleMapsService(
+      GoogleMapsContext(
+        apiKey = configuration.googleMapsConf.apiKey
+      )
+    )
+    service <- VolskayaService.make(userCollection, googleMapsService)
     interpreter = graphQL(
       RootResolver(
         Queries(
           args => service.getUser(args.id),
           args => service.getAllUsers(args.limit, args.offset),
-          service.wakeUpVolskaya
+          service.wakeUpVolskaya,
+          args => service.calculatePriceRoute(args.coordinateStart, args.coordinateFinish)
         ),
         Mutations(
           args =>
@@ -61,7 +71,7 @@ object VolskayaServer extends CatsApp with GenericSchema[Console with Clock] {
 
   private val program = logic.provideSome[zio.ZEnv] { env =>
     new System with Clock with Console with Blocking with Random with ConfigurationModule.Live
-    with UserCollectionModule.Live {
+    with UserCollectionModule.Live with GoogleMapsModule.Live {
       override val system: System.Service[Any]     = env.system
       override val clock: Clock.Service[Any]       = env.clock
       override val console: Console.Service[Any]   = env.console

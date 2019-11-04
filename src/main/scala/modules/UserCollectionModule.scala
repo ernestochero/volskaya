@@ -1,23 +1,16 @@
-package graphql
-import zio.{ RIO, ZIO }
-import zio.console.Console
-import UserCollectionModule._
-import models.{ FavoriteSite, PasswordField, PersonalInformation, User }
-import org.mongodb.scala.MongoCollection
+package modules
+
 import commons.Transformers._
 import models.UserManagementExceptions.VolskayaAPIException
-import models.VolskayaMessages.{
-  VolskayaFailedResponse,
-  VolskayaResultSuccessResponse,
-  VolskayaSuccessResponse,
-  getSuccessGetMessage,
-  getSuccessUpdateMessage,
-  getUserNotExistMessage
-}
+import models.VolskayaMessages._
+import models.{ FavoriteSite, PasswordField, PersonalInformation, User }
+import modules.UserCollectionModule._
 import mongodb.Mongo
-import org.mongodb.scala.bson.ObjectId
+import org.mongodb.scala.MongoCollection
+import org.mongodb.scala.bson.{ Document, ObjectId }
 import org.mongodb.scala.result.UpdateResult
-import org.mongodb.scala.bson.Document
+import zio.console.Console
+import zio.{ RIO, ZIO }
 
 import scala.concurrent.{ ExecutionContext, Future }
 

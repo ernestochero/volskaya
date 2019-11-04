@@ -1,4 +1,4 @@
-package volskayaSystem
+package commons
 
 import models.Coordinate
 

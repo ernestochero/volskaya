@@ -10,7 +10,11 @@ object ConfigurationModule {
   case class ConfigurationError(message: String) extends RuntimeException(message)
   case class HttpConf(host: String, port: Int)
   case class MongoConf(database: String, uri: String, userCollection: String)
-  case class Configuration(appName: String, httpConf: HttpConf, mongoConf: MongoConf)
+  case class GoogleMapsConf(apiKey: String)
+  case class Configuration(appName: String,
+                           httpConf: HttpConf,
+                           mongoConf: MongoConf,
+                           googleMapsConf: GoogleMapsConf)
 
   trait Service[R] {
     def configuration: ZIO[R, Throwable, Configuration]
