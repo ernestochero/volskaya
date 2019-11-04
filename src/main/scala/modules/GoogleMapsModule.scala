@@ -1,8 +1,6 @@
 package modules
 import commons.Transformers._
 import modules.GoogleMapsModule._
-import googleMapsService.model.TravelMode.TravelMode
-import googleMapsService.model.Units.Units
 import googleMapsService.model.{ DistanceMatrix, TravelMode, Units }
 import googleMapsService.{ DistanceMatrixApi, GoogleMapsContext }
 import models.Coordinate
