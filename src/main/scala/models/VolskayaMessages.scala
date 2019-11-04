@@ -88,5 +88,9 @@ object VolskayaMessages {
                                       volskayaResponse: VolskayaResponse)
 
   case class VolskayaResultSuccessResponse[F[_], A](value: F[A], volskayaResponse: VolskayaResponse)
+  case class VolskayaPrice(price: Double,
+                           distance: Double,
+                           co2Saved: Double,
+                           approximateTime: Double)
 
 }

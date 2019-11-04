@@ -6,6 +6,7 @@ import models.UserManagementExceptions.VolskayaAPIException
 import models.VolskayaMessages.{
   VolskayaFailedResponse,
   VolskayaGetPriceResponse,
+  VolskayaPrice,
   VolskayaResultSuccessResponse,
   VolskayaSuccessResponse,
   getSuccessCalculateMessage
@@ -50,39 +51,44 @@ case class VolskayaService(userCollection: Ref[UserCollection],
   def calculatePriceRoute(
     coordinateStart: Coordinate,
     coordinateFinish: Coordinate
-  ): ZIO[Console, VolskayaAPIException, VolskayaGetPriceResponse] = {
-    def buildGetPriceResponse(initialDistance: Option[Int],
-                              secondDistance: Option[Int]): VolskayaGetPriceResponse = {
-      val distanceInKilometers   = secondDistance.map(calculateDistanceInKilometers)
-      val approximateTime        = secondDistance.map(calculateApproximateTime)
-      val co2Saved               = secondDistance.map(calculateCO2Saved)
-      val approximateInitialTime = initialDistance.map(calculateApproximateTime)
+  ): ZIO[Console, VolskayaAPIException, VolskayaResultSuccessResponse[Option, VolskayaPrice]] = {
+    def buildGetPriceResponse(
+      initialDistance: Int,
+      secondDistance: Int
+    ): VolskayaResultSuccessResponse[Option, VolskayaPrice] = {
+      val distanceInKilometers   = calculateDistanceInKilometers(secondDistance)
+      val approximateTime        = calculateApproximateTime(secondDistance)
+      val co2Saved               = calculateCO2Saved(secondDistance)
+      val approximateInitialTime = calculateApproximateTime(initialDistance)
 
       if (isDistanceZero(secondDistance)) {
-        VolskayaGetPriceResponse(
+        VolskayaResultSuccessResponse[Option, VolskayaPrice](
+          None,
           volskayaResponse = VolskayaFailedResponse(
             responseMessage = "Distance can't be zero",
             responseCode = "04"
           )
         )
       } else if (isDistanceOverLimit(secondDistance)) {
-        VolskayaGetPriceResponse(
+        VolskayaResultSuccessResponse[Option, VolskayaPrice](
+          None,
           volskayaResponse = VolskayaFailedResponse(
             responseMessage = "Route exceeds the limit of 10 kilometers",
             responseCode = "03"
           )
         )
       } else {
-        val approximateFinalTime = for {
-          time        <- approximateTime
-          initialTime <- approximateInitialTime
-        } yield time + initialTime
-        val price = secondDistance.map(getPriceByDistance)
-        VolskayaGetPriceResponse(
-          price,
-          distanceInKilometers,
-          co2Saved,
-          approximateFinalTime,
+        val approximateFinalTime = approximateTime + approximateInitialTime
+        val price                = getPriceByDistance(secondDistance)
+        VolskayaResultSuccessResponse[Option, VolskayaPrice](
+          Some(
+            VolskayaPrice(
+              price,
+              distanceInKilometers,
+              co2Saved,
+              approximateFinalTime,
+            )
+          ),
           VolskayaSuccessResponse(
             responseMessage = getSuccessCalculateMessage(models.PriceFieldId)
           )
@@ -96,18 +102,9 @@ case class VolskayaService(userCollection: Ref[UserCollection],
       distancePickUptoLeaveLocation <- googleMapsService.get.flatMap(
         _.calculateDistanceMatrixFromCoordinates(coordinateStart, coordinateFinish)
       )
-      initialDistance = extractDistanceFromDistanceMatrix(distanceFastBiciToPickUpLocation)
-      secondDistance  = extractDistanceFromDistanceMatrix(distancePickUptoLeaveLocation)
-      priceResponse = if (initialDistance.isDefined && secondDistance.isDefined) {
-        buildGetPriceResponse(initialDistance, secondDistance)
-      } else {
-        VolskayaGetPriceResponse(
-          volskayaResponse = VolskayaFailedResponse(
-            responseMessage = "Distances are not defined",
-            responseCode = "05"
-          )
-        )
-      }
+      initialDistance <- extractDistanceFromDistanceMatrix(distanceFastBiciToPickUpLocation)
+      secondDistance  <- extractDistanceFromDistanceMatrix(distancePickUptoLeaveLocation)
+      priceResponse = buildGetPriceResponse(initialDistance, secondDistance)
     } yield priceResponse).mapError(e => VolskayaAPIException(e.getMessage))
 
     for {
@@ -115,7 +112,8 @@ case class VolskayaService(userCollection: Ref[UserCollection],
                       coordinateFinish
                     )) { priceResponse } else
         ZIO.succeed(
-          VolskayaGetPriceResponse(
+          VolskayaResultSuccessResponse[Option, VolskayaPrice](
+            None,
             volskayaResponse = VolskayaFailedResponse(
               responseMessage = "Delivery out of range",
               responseCode = "02"

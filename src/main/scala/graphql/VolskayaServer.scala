@@ -1,4 +1,5 @@
 package graphql
+import caliban.CalibanError
 import caliban.schema.{ ArgBuilder, GenericSchema, Schema }
 import caliban.GraphQL._
 import caliban.{ Http4sAdapter, RootResolver }

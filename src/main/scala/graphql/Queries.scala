@@ -3,7 +3,11 @@ package graphql
 import caliban.schema.Annotations.GQLDescription
 import models.{ Coordinate, User }
 import models.UserManagementExceptions.VolskayaAPIException
-import models.VolskayaMessages.{ VolskayaGetPriceResponse, VolskayaResultSuccessResponse }
+import models.VolskayaMessages.{
+  VolskayaGetPriceResponse,
+  VolskayaPrice,
+  VolskayaResultSuccessResponse
+}
 import zio.{ UIO, ZIO }
 import zio.console.Console
 
@@ -21,7 +25,9 @@ case class Queries(
   @GQLDescription("Volskaya return a list of users")
   wakeUpHeroku: UIO[String],
   @GQLDescription("Volskaya return price of one Route")
-  calculatePriceRoute: calculatePriceRouteArg => ZIO[Console,
-                                                     VolskayaAPIException,
-                                                     VolskayaGetPriceResponse]
+  calculatePriceRoute: calculatePriceRouteArg => ZIO[
+    Console,
+    VolskayaAPIException,
+    VolskayaResultSuccessResponse[Option, VolskayaPrice]
+  ]
 )

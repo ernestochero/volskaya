@@ -3,6 +3,8 @@ package commons
 import models.Coordinate
 import PolygonUtils._
 import googleMapsService.model.DistanceMatrix
+import models.UserManagementExceptions.VolskayaAPIException
+import zio.ZIO
 
 object VolskayaOperations {
   def getPriceByDistance(distanceMeters: Int): Double = distanceMeters match {
@@ -26,16 +28,25 @@ object VolskayaOperations {
     val x = (distance * 83.71847) / 1000
     Math.round(x * 100) / 100.0
   }
-  def isDistanceZero(distance: Option[Int]): Boolean      = distance.getOrElse(0) == 0
-  def isDistanceOverLimit(distance: Option[Int]): Boolean = distance.getOrElse(0) > 10000
-  def extractDistanceFromDistanceMatrix(distanceMatrix: DistanceMatrix): Option[Int] =
-    distanceMatrix.status match {
-      case "OK" =>
-        val result = for {
-          row     <- distanceMatrix.rows
-          element <- row.elements
-        } yield element.distance.value
-        result.headOption
-      case _ => None
-    }
+  def isDistanceZero(distance: Int): Boolean      = distance == 0
+  def isDistanceOverLimit(distance: Int): Boolean = distance > 10000
+  def extractDistanceFromDistanceMatrix(
+    distanceMatrix: DistanceMatrix
+  ): ZIO[Any, VolskayaAPIException, Int] = {
+    val cp = distanceMatrix.copy(status = "PI")
+    ZIO
+      .fromOption(
+        cp.status match {
+          case "OK" =>
+            val result = for {
+              row     <- distanceMatrix.rows
+              element <- row.elements
+            } yield element.distance.value
+            result.headOption
+          case _ => None
+        }
+      )
+      .mapError(_ => VolskayaAPIException("Distances are not defined"))
+  }
+
 }
