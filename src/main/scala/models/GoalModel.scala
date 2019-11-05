@@ -1,15 +1,12 @@
 package models
 
-import org.joda.time.DateTime
-
 case class Goal(userCyclistId: Option[String],
                 goalCoordinate: Option[Coordinate],
                 goalTypeName: Option[String],
                 goalCanceled: Option[GoalCanceled])
 
 //TODO: change to DateTime on time in the future
-case class GoalCanceled(time: Option[String],
-                        reason: Option[String])
+case class GoalCanceled(time: Option[String], reason: Option[String])
 
 sealed trait GoalType {
   val description: String

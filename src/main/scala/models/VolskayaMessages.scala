@@ -59,10 +59,6 @@ object VolskayaMessages {
   def getMatchPatternNotFoundMessage: String = "Match Pattern Not Found"
   def getFailedSendVerificationCode: String  = "Failed to Sent Verification Code"
 
-  case class VolskayaIncorrectParameters(responseCode: String = "11",
-                                         responseMessage: String = "Incorrect Parameters")
-      extends VolskayaResponse
-
   case class VolskayaSuccessResponse(responseCode: String = "00", responseMessage: String)
       extends VolskayaResponse
 
@@ -73,18 +69,6 @@ object VolskayaMessages {
                                       distance: Option[Double] = None,
                                       co2Saved: Option[Double] = None,
                                       approximateTime: Option[Double] = None,
-                                      volskayaResponse: VolskayaResponse)
-
-  case class VolskayaGetUserResponse(userDomain: Option[UserDomain],
-                                     volskayaResponse: VolskayaResponse)
-
-  case class VolskayaGetUserResponse2(userDomain: Option[User], volskayaResponse: VolskayaResponse)
-
-  case class VolskayaLoginResponse(id: Option[String], volskayaResponse: VolskayaResponse)
-
-  case class VolskayaRegisterResponse(id: Option[String], volskayaResponse: VolskayaResponse)
-
-  case class VolskayaGetOrderResponse(orderDomain: Option[OrderDomain],
                                       volskayaResponse: VolskayaResponse)
 
   case class VolskayaResultSuccessResponse[F[_], A](value: F[A], volskayaResponse: VolskayaResponse)

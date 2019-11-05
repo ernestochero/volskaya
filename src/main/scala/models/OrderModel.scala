@@ -20,60 +20,7 @@ case class Order(
   products: List[Product] = List(),
   generalDescription: Option[String] = None,
   created: Option[String] = Some(DateTime.now(DateTimeZone.UTC).toString),
-) {
-  def asDomain =
-    OrderDomain(
-      Some(_id.toHexString),
-      clientId,
-      cyclistId,
-      finalClient,
-      route,
-      distance,
-      price,
-      orderStates,
-      payMethod,
-      isPaid,
-      lastState,
-      products,
-      generalDescription,
-      created
-    )
-}
-
-case class OrderDomain(
-  id: Option[String],
-  clientId: Option[String],
-  cyclistId: Option[String],
-  finalClient: Option[FinalClient],
-  route: Option[Route],
-  distance: Option[Double],
-  price: Option[Double],
-  orderStates: List[OrderState] = List(),
-  payMethod: Option[String],
-  isPaid: Option[Boolean],
-  lastState: Option[OrderState],
-  products: List[Product] = List(),
-  generalDescription: Option[String],
-  created: Option[String],
-) {
-  def asResource =
-    Order(
-      id.fold(ObjectId.get()) { new ObjectId(_) },
-      clientId,
-      cyclistId,
-      finalClient,
-      route,
-      distance,
-      price,
-      orderStates,
-      payMethod,
-      isPaid,
-      lastState,
-      products,
-      generalDescription,
-      created
-    )
-}
+)
 
 case class FinalClient(
   name: String,

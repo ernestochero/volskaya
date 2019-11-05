@@ -72,27 +72,6 @@ case class PersonalInformation(firstName: String, lastName: String, dni: String)
 
 case class FavoriteSite(coordinate: Coordinate, name: String, address: String)
 
-case class UserDomain(id: Option[String],
-                      device: Option[Device],
-                      personalInformation: Option[PersonalInformation],
-                      email: Option[String],
-                      password: Option[String],
-                      isAuthenticated: Option[Boolean],
-                      favoriteSites: Option[List[FavoriteSite]],
-                      confirmationCode: Option[String],
-                      role: Option[String]) {
-  def asResource =
-    User(id.fold(ObjectId.get()) { new ObjectId(_) },
-         device,
-         personalInformation,
-         email,
-         password,
-         isAuthenticated,
-         favoriteSites,
-         confirmationCode,
-         role)
-}
-
 case class User(_id: ObjectId = new ObjectId(),
                 device: Option[Device] = None,
                 personalInformation: Option[PersonalInformation] = None,
@@ -101,18 +80,7 @@ case class User(_id: ObjectId = new ObjectId(),
                 isAuthenticated: Option[Boolean] = None,
                 favoriteSites: Option[List[FavoriteSite]] = None,
                 confirmationCode: Option[String] = None,
-                role: Option[String] = None) {
-  def asDomain =
-    UserDomain(Some(_id.toHexString),
-               device,
-               personalInformation,
-               email,
-               password,
-               isAuthenticated,
-               favoriteSites,
-               confirmationCode,
-               role)
-}
+                role: Option[String] = None)
 
 sealed trait Role {
   val roleName: String
@@ -120,7 +88,7 @@ sealed trait Role {
 
 object Role {
 
-  def decodeRoleName(name: String) =
+  def decodeRoleName(name: String): Role =
     name match {
       case "client"  => Client
       case "cyclist" => Cyclist
