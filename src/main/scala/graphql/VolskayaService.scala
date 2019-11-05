@@ -1,11 +1,11 @@
 package graphql
 
+import caliban.CalibanError.ExecutionError
 import modules.UserCollectionModule.UserCollection
 import models.{ Coordinate, User }
 import models.UserManagementExceptions.VolskayaAPIException
 import models.VolskayaMessages.{
   VolskayaFailedResponse,
-  VolskayaGetPriceResponse,
   VolskayaPrice,
   VolskayaResultSuccessResponse,
   VolskayaSuccessResponse,
@@ -17,7 +17,7 @@ import zio.console.Console
 import zio.stream.ZStream
 import commons.VolskayaOperations._
 import commons.Constants._
-import googleMapsService.model.DistanceMatrix
+
 case class VolskayaService(userCollection: Ref[UserCollection],
                            googleMapsService: Ref[GoogleMapsService],
                            subscribers: Ref[List[Queue[String]]]) {
@@ -27,31 +27,46 @@ case class VolskayaService(userCollection: Ref[UserCollection],
   def getAllUsers(
     limit: Int,
     offset: Int
-  ): ZIO[Console, VolskayaAPIException, VolskayaResultSuccessResponse[List, User]] =
-    userCollection.get.flatMap(
-      _.getAllUsers(limit, offset)
-    )
+  ): ZIO[Console, ExecutionError, VolskayaResultSuccessResponse[List, User]] =
+    userCollection.get
+      .flatMap(
+        _.getAllUsers(limit, offset)
+      )
+      .mapError {
+        case ex: VolskayaAPIException => ExecutionError(ex.message)
+        case other                    => ExecutionError(s"Error $other")
+      }
 
   def getUser(
     id: String
-  ): ZIO[Console, VolskayaAPIException, VolskayaResultSuccessResponse[Option, User]] =
-    userCollection.get.flatMap(
-      _.getUser(id)
-    )
+  ): ZIO[Console, ExecutionError, VolskayaResultSuccessResponse[Option, User]] =
+    userCollection.get
+      .flatMap(
+        _.getUser(id)
+      )
+      .mapError {
+        case ex: VolskayaAPIException => ExecutionError(ex.message)
+        case other                    => ExecutionError(s"Error $other")
+      }
 
   def updatePassword(
     id: String,
     oldPassword: String,
     newPassword: String
-  ): ZIO[Console, VolskayaAPIException, VolskayaResultSuccessResponse[Option, String]] =
-    userCollection.get.flatMap(
-      _.updatePassword(id, oldPassword, newPassword)
-    )
+  ): ZIO[Console, ExecutionError, VolskayaResultSuccessResponse[Option, String]] =
+    userCollection.get
+      .flatMap(
+        _.updatePassword(id, oldPassword, newPassword)
+      )
+      .mapError {
+        case ex: VolskayaAPIException => ExecutionError(ex.message)
+        case other                    => ExecutionError(s"Error $other")
+      }
 
   def calculatePriceRoute(
     coordinateStart: Coordinate,
     coordinateFinish: Coordinate
-  ): ZIO[Console, VolskayaAPIException, VolskayaResultSuccessResponse[Option, VolskayaPrice]] = {
+  ): ZIO[Console, ExecutionError, VolskayaResultSuccessResponse[Option, VolskayaPrice]] = {
     def buildGetPriceResponse(
       initialDistance: Int,
       secondDistance: Int
@@ -105,7 +120,10 @@ case class VolskayaService(userCollection: Ref[UserCollection],
       initialDistance <- extractDistanceFromDistanceMatrix(distanceFastBiciToPickUpLocation)
       secondDistance  <- extractDistanceFromDistanceMatrix(distancePickUptoLeaveLocation)
       priceResponse = buildGetPriceResponse(initialDistance, secondDistance)
-    } yield priceResponse).mapError(e => VolskayaAPIException(e.getMessage))
+    } yield priceResponse).mapError {
+      case ex: VolskayaAPIException => ExecutionError(ex.message)
+      case other                    => ExecutionError(s"Error: ${other.getMessage}")
+    }
 
     for {
       result <- if (validateCoordinateIntoArea(coordinateStart) && validateCoordinateIntoArea(

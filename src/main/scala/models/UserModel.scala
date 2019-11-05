@@ -62,7 +62,7 @@ object UserManagementExceptions {
     override def getMessage: String = message
   }
 
-  case class VolskayaAPIException(message: String) extends Exception
+  case class VolskayaAPIException(message: String) extends Throwable
 
 }
 

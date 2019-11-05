@@ -2,6 +2,7 @@ package commons
 
 import models.Coordinate
 import PolygonUtils._
+import caliban.CalibanError.ExecutionError
 import googleMapsService.model.DistanceMatrix
 import models.UserManagementExceptions.VolskayaAPIException
 import zio.ZIO
@@ -32,11 +33,10 @@ object VolskayaOperations {
   def isDistanceOverLimit(distance: Int): Boolean = distance > 10000
   def extractDistanceFromDistanceMatrix(
     distanceMatrix: DistanceMatrix
-  ): ZIO[Any, VolskayaAPIException, Int] = {
-    val cp = distanceMatrix.copy(status = "PI")
+  ): ZIO[Any, VolskayaAPIException, Int] =
     ZIO
       .fromOption(
-        cp.status match {
+        distanceMatrix.status match {
           case "OK" =>
             val result = for {
               row     <- distanceMatrix.rows
@@ -46,7 +46,6 @@ object VolskayaOperations {
           case _ => None
         }
       )
-      .mapError(_ => VolskayaAPIException("Distances are not defined"))
-  }
+      .mapError(_ => VolskayaAPIException("distanceMatrix are not defined"))
 
 }
