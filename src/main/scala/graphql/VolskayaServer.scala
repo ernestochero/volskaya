@@ -43,7 +43,7 @@ object VolskayaServer extends CatsApp with GenericSchema[Console with Clock] {
       RootResolver(
         Queries(
           args => service.getUser(args.id),
-          args => service.getAllUsers(args.limit, args.offset),
+          args => service.getAllUsers(args.limit.getOrElse(20), args.offset.getOrElse(0)),
           service.wakeUpVolskaya,
           args => service.calculatePriceRoute(args.coordinateStart, args.coordinateFinish)
         ),
@@ -53,7 +53,8 @@ object VolskayaServer extends CatsApp with GenericSchema[Console with Clock] {
               args.id,
               args.oldPassword,
               args.newPassword
-          )
+          ),
+          args => service.insertUser(args.role)
         )
       )
     )

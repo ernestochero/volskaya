@@ -2,7 +2,7 @@ package graphql
 
 import caliban.CalibanError.ExecutionError
 import modules.UserCollectionModule.UserCollection
-import models.{ Coordinate, User }
+import models.{ Coordinate, Role, User }
 import models.UserManagementExceptions.VolskayaAPIException
 import models.VolskayaMessages.{
   VolskayaFailedResponse,
@@ -139,6 +139,13 @@ case class VolskayaService(userCollection: Ref[UserCollection],
           )
         )
     } yield result
+  }
+
+  def insertUser(
+    roleToInsert: Role
+  ): ZIO[Console, ExecutionError, VolskayaResultSuccessResponse[Option, User]] = {
+    val user = User(role = Some(roleToInsert))
+    userCollection.get.flatMap(_.insertUser(user))
   }
 
   def userAddedEvent: ZStream[Any, Nothing, String] = ZStream.unwrap {

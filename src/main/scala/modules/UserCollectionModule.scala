@@ -1,12 +1,13 @@
 package modules
 
+import caliban.CalibanError.ExecutionError
 import commons.Transformers._
 import models.UserManagementExceptions.VolskayaAPIException
 import models.VolskayaMessages._
 import models.{ FavoriteSite, PasswordField, PersonalInformation, User }
 import modules.UserCollectionModule._
 import mongodb.Mongo
-import org.mongodb.scala.MongoCollection
+import org.mongodb.scala.{ Completed, MongoCollection }
 import org.mongodb.scala.bson.{ Document, ObjectId }
 import org.mongodb.scala.result.UpdateResult
 import zio.console.Console
@@ -28,6 +29,7 @@ sealed trait Operation {
   ): RIO[Console, UpdateResult]
 
   def updateFavoriteSiteDatabase(id: String, favoriteSite: FavoriteSite): RIO[Console, UpdateResult]
+  def insertUserDatabase(user: User): RIO[Console, Option[User]]
 
   /*  def verifyLoginAgainstDatabase(email: String, password: String)
   def storeVerificationCodeDatabase(id: String, verificationCode: String)
@@ -112,6 +114,13 @@ object UserCollectionModule {
         .toRIO
     }
 
+    override def insertUserDatabase(user: User): RIO[Console, Option[User]] =
+      userMongoCollection
+        .insertOne(user)
+        .toFuture()
+        .recoverWith { case ex => Future.failed(ex) }
+        .map(_ => Some(user))
+        .toRIO
   }
 
   case class UserCollection(userMongoCollection: MongoCollection[User]) {
@@ -176,6 +185,19 @@ object UserCollectionModule {
           }
         )
       } yield volskayaResult
+
+    def insertUser(
+      user: User
+    ): ZIO[Console, ExecutionError, VolskayaResultSuccessResponse[Option, User]] =
+      (for {
+        user <- userOperation.insertUserDatabase(user)
+        volskayaResult = VolskayaResultSuccessResponse(
+          user,
+          VolskayaSuccessResponse(
+            responseMessage = getSuccessUpdateMessage(fieldId = PasswordField)
+          )
+        )
+      } yield volskayaResult).mapError(_ => ExecutionError("Error to insert User"))
   }
 
   trait Service[R] {

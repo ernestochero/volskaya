@@ -64,7 +64,10 @@ object UserManagementExceptions {
   case class VolskayaAPIException(message: String) extends Exception
 }
 
-case class Device(name: String, number: String, imei: String, token: Option[String] = None)
+case class Device(name: Option[String] = None,
+                  number: String,
+                  imei: Option[String] = None,
+                  token: Option[String] = None)
 case class PersonalInformation(firstName: String, lastName: String, dni: String)
 case class CompanyInformation(name: String, address: String, ruc: String)
 case class UserAuthenticate(verificationCode: Int, isAuthenticated: Boolean = false)
