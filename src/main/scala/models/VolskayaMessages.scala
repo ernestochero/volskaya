@@ -71,7 +71,7 @@ object VolskayaMessages {
                                       approximateTime: Option[Double] = None,
                                       volskayaResponse: VolskayaResponse)
 
-  case class VolskayaResultSuccessResponse[F[_], A](value: F[A], volskayaResponse: VolskayaResponse)
+  case class VolskayaResult[F[_], A](value: F[A], volskayaResponse: VolskayaResponse)
   case class VolskayaPrice(price: Double,
                            distance: Double,
                            co2Saved: Double,

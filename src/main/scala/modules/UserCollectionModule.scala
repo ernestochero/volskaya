@@ -127,14 +127,14 @@ object UserCollectionModule {
     val userOperation = UserOperation(userMongoCollection)
     def getUser(
       id: String
-    ): ZIO[Console, VolskayaAPIException, VolskayaResultSuccessResponse[Option, User]] =
+    ): ZIO[Console, VolskayaAPIException, VolskayaResult[Option, User]] =
       for {
         user <- userOperation
           .getUserFromDatabase(id)
           .mapError(
             e => VolskayaAPIException(e.getMessage)
           )
-        volskayaResult = VolskayaResultSuccessResponse[Option, User](
+        volskayaResult = VolskayaResult[Option, User](
           value = user,
           if (user.isDefined)
             VolskayaSuccessResponse(responseMessage = getSuccessGetMessage(models.UserField))
@@ -148,12 +148,12 @@ object UserCollectionModule {
     def getAllUsers(
       limit: Int,
       offset: Int
-    ): ZIO[Console, VolskayaAPIException, VolskayaResultSuccessResponse[List, User]] =
+    ): ZIO[Console, VolskayaAPIException, VolskayaResult[List, User]] =
       for {
         users <- userOperation
           .getAllUsersFromDatabase(limit, offset)
           .mapError(e => VolskayaAPIException(e.getMessage))
-        volskayaResult = VolskayaResultSuccessResponse[List, User](
+        volskayaResult = VolskayaResult[List, User](
           users,
           VolskayaSuccessResponse(responseMessage = "Users Extracted successfully")
         )
@@ -163,7 +163,7 @@ object UserCollectionModule {
       id: String,
       oldPassword: String,
       newPassword: String
-    ): ZIO[Console, VolskayaAPIException, VolskayaResultSuccessResponse[Option, String]] =
+    ): ZIO[Console, VolskayaAPIException, VolskayaResult[Option, String]] =
       for {
         updateResult <- userOperation
           .updatePasswordDatabase(
@@ -172,7 +172,7 @@ object UserCollectionModule {
             newPassword
           )
           .mapError(e => VolskayaAPIException(e.getMessage))
-        volskayaResult = VolskayaResultSuccessResponse[Option, String](
+        volskayaResult = VolskayaResult[Option, String](
           Some(id),
           if (updateResult.getMatchedCount == 1 && updateResult.wasAcknowledged()) {
             VolskayaSuccessResponse(
@@ -188,10 +188,10 @@ object UserCollectionModule {
 
     def insertUser(
       user: User
-    ): ZIO[Console, ExecutionError, VolskayaResultSuccessResponse[Option, User]] =
+    ): ZIO[Console, ExecutionError, VolskayaResult[Option, User]] =
       (for {
         user <- userOperation.insertUserDatabase(user)
-        volskayaResult = VolskayaResultSuccessResponse(
+        volskayaResult = VolskayaResult(
           user,
           VolskayaSuccessResponse(
             responseMessage = getSuccessUpdateMessage(fieldId = PasswordField)

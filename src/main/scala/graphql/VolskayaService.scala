@@ -7,7 +7,7 @@ import models.UserManagementExceptions.VolskayaAPIException
 import models.VolskayaMessages.{
   VolskayaFailedResponse,
   VolskayaPrice,
-  VolskayaResultSuccessResponse,
+  VolskayaResult,
   VolskayaSuccessResponse,
   getSuccessCalculateMessage
 }
@@ -27,7 +27,7 @@ case class VolskayaService(userCollection: Ref[UserCollection],
   def getAllUsers(
     limit: Int,
     offset: Int
-  ): ZIO[Console, ExecutionError, VolskayaResultSuccessResponse[List, User]] =
+  ): ZIO[Console, ExecutionError, VolskayaResult[List, User]] =
     userCollection.get
       .flatMap(
         _.getAllUsers(limit, offset)
@@ -39,7 +39,7 @@ case class VolskayaService(userCollection: Ref[UserCollection],
 
   def getUser(
     id: String
-  ): ZIO[Console, ExecutionError, VolskayaResultSuccessResponse[Option, User]] =
+  ): ZIO[Console, ExecutionError, VolskayaResult[Option, User]] =
     userCollection.get
       .flatMap(
         _.getUser(id)
@@ -53,7 +53,7 @@ case class VolskayaService(userCollection: Ref[UserCollection],
     id: String,
     oldPassword: String,
     newPassword: String
-  ): ZIO[Console, ExecutionError, VolskayaResultSuccessResponse[Option, String]] =
+  ): ZIO[Console, ExecutionError, VolskayaResult[Option, String]] =
     userCollection.get
       .flatMap(
         _.updatePassword(id, oldPassword, newPassword)
@@ -66,18 +66,18 @@ case class VolskayaService(userCollection: Ref[UserCollection],
   def calculatePriceRoute(
     coordinateStart: Coordinate,
     coordinateFinish: Coordinate
-  ): ZIO[Console, ExecutionError, VolskayaResultSuccessResponse[Option, VolskayaPrice]] = {
+  ): ZIO[Console, ExecutionError, VolskayaResult[Option, VolskayaPrice]] = {
     def buildGetPriceResponse(
       initialDistance: Int,
       secondDistance: Int
-    ): VolskayaResultSuccessResponse[Option, VolskayaPrice] = {
+    ): VolskayaResult[Option, VolskayaPrice] = {
       val distanceInKilometers   = calculateDistanceInKilometers(secondDistance)
       val approximateTime        = calculateApproximateTime(secondDistance)
       val co2Saved               = calculateCO2Saved(secondDistance)
       val approximateInitialTime = calculateApproximateTime(initialDistance)
 
       if (isDistanceZero(secondDistance)) {
-        VolskayaResultSuccessResponse[Option, VolskayaPrice](
+        VolskayaResult[Option, VolskayaPrice](
           None,
           volskayaResponse = VolskayaFailedResponse(
             responseMessage = "Distance can't be zero",
@@ -85,7 +85,7 @@ case class VolskayaService(userCollection: Ref[UserCollection],
           )
         )
       } else if (isDistanceOverLimit(secondDistance)) {
-        VolskayaResultSuccessResponse[Option, VolskayaPrice](
+        VolskayaResult[Option, VolskayaPrice](
           None,
           volskayaResponse = VolskayaFailedResponse(
             responseMessage = "Route exceeds the limit of 10 kilometers",
@@ -95,7 +95,7 @@ case class VolskayaService(userCollection: Ref[UserCollection],
       } else {
         val approximateFinalTime = approximateTime + approximateInitialTime
         val price                = getPriceByDistance(secondDistance)
-        VolskayaResultSuccessResponse[Option, VolskayaPrice](
+        VolskayaResult[Option, VolskayaPrice](
           Some(
             VolskayaPrice(
               price,
@@ -130,7 +130,7 @@ case class VolskayaService(userCollection: Ref[UserCollection],
                       coordinateFinish
                     )) { priceResponse } else
         ZIO.succeed(
-          VolskayaResultSuccessResponse[Option, VolskayaPrice](
+          VolskayaResult[Option, VolskayaPrice](
             None,
             volskayaResponse = VolskayaFailedResponse(
               responseMessage = "Delivery out of range",
@@ -143,7 +143,7 @@ case class VolskayaService(userCollection: Ref[UserCollection],
 
   def insertUser(
     roleToInsert: Role
-  ): ZIO[Console, ExecutionError, VolskayaResultSuccessResponse[Option, User]] = {
+  ): ZIO[Console, ExecutionError, VolskayaResult[Option, User]] = {
     val user = User(role = Some(roleToInsert))
     userCollection.get.flatMap(_.insertUser(user))
   }
