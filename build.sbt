@@ -14,7 +14,7 @@ val calibanVersion = "0.2.0"
 val circeVersion = "0.12.2"
 val zioVersion = "2.0.0.0-RC6"
 val http4sVersion = "0.20.6"
-val mongoDriverVersion = "2.1.0"
+val mongoDriverVersion = "2.7.0"
 val pureConfigVersion = "0.12.1"
 
 val calibanDependencies = Seq(
