@@ -56,6 +56,7 @@ libraryDependencies ++=
   "de.heikoseeberger" %% "akka-http-circe" % "1.21.0",
   "joda-time" % "joda-time" % "2.10.1",
   "org.joda" % "joda-convert" % "2.2.0",
+  "log4j" % "log4j" % "1.2.17",
 ) ++ mongoDriverDependencies ++ http4sDependencies ++ zioDependencies ++ circeDependencies ++ calibanDependencies ++ pureConfigDependencies
 
 Revolver.settings
