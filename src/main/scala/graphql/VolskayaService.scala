@@ -17,7 +17,8 @@ import zio.console.Console
 import zio.stream.ZStream
 import commons.VolskayaOperations._
 import commons.Constants._
-
+import commons.Logger._
+import modules.LoggingModule
 case class VolskayaService(userCollection: Ref[UserCollection],
                            googleMapsService: Ref[GoogleMapsService],
                            subscribers: Ref[List[Queue[String]]]) {

@@ -4,7 +4,7 @@ import caliban.schema.{ ArgBuilder, GenericSchema, Schema }
 import caliban.GraphQL._
 import caliban.{ Http4sAdapter, RootResolver }
 import googleMapsService.GoogleMapsContext
-import modules.{ ConfigurationModule, GoogleMapsModule, UserCollectionModule }
+import modules.{ ConfigurationModule, GoogleMapsModule, LoggingModule, UserCollectionModule }
 import org.mongodb.scala.bson.ObjectId
 import zio.{ RIO, ZIO }
 import zio.clock.Clock
@@ -17,22 +17,23 @@ import org.http4s.server.middleware.CORS
 import zio.blocking.Blocking
 import zio.random.Random
 import zio.system.System
-
+import commons.Logger._
 import scala.language.higherKinds
 object VolskayaServer extends CatsApp with GenericSchema[Console with Clock] {
   type VolskayaTask[A] = RIO[Console with Clock, A]
   implicit val objectIdSchema     = Schema.stringSchema.contramap[ObjectId](_.toHexString)
   implicit val objectIdArgBuilder = ArgBuilder.string.map(new ObjectId(_))
-
-  val logic: ZIO[zio.ZEnv with UserCollectionModule with ConfigurationModule with GoogleMapsModule,
-                 Nothing,
-                 Int] = (for {
+  val logic
+    : ZIO[zio.ZEnv with UserCollectionModule with ConfigurationModule with GoogleMapsModule with LoggingModule,
+          Nothing,
+          Int] = (for {
     configuration <- ConfigurationModule.factory.configuration
     userCollection <- UserCollectionModule.factory.userCollection(
       configuration.mongoConf.uri,
       configuration.mongoConf.database,
       configuration.mongoConf.userCollection
     )
+    _ <- LoggingModule.factory.warn(s"init the graphql application ${configuration.appName}")
     googleMapsService <- GoogleMapsModule.factory.googleMapsService(
       GoogleMapsContext(
         apiKey = configuration.googleMapsConf.apiKey
@@ -73,7 +74,7 @@ object VolskayaServer extends CatsApp with GenericSchema[Console with Clock] {
 
   private val program = logic.provideSome[zio.ZEnv] { env =>
     new System with Clock with Console with Blocking with Random with ConfigurationModule.Live
-    with UserCollectionModule.Live with GoogleMapsModule.Live {
+    with UserCollectionModule.Live with GoogleMapsModule.Live with LoggingModule.Live {
       override val system: System.Service[Any]     = env.system
       override val clock: Clock.Service[Any]       = env.clock
       override val console: Console.Service[Any]   = env.console

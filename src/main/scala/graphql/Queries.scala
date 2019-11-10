@@ -4,6 +4,7 @@ import caliban.CalibanError.ExecutionError
 import caliban.schema.Annotations.GQLDescription
 import models.{ Coordinate, Role, User }
 import models.VolskayaMessages.{ VolskayaPrice, VolskayaResult }
+import modules.LoggingModule
 import zio.{ UIO, ZIO }
 import zio.console.Console
 
