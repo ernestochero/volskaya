@@ -189,15 +189,17 @@ object UserCollectionModule {
     def insertUser(
       user: User
     ): ZIO[Console, ExecutionError, VolskayaResult[Option, User]] =
-      (for {
-        user <- userOperation.insertUserDatabase(user)
+      for {
+        user <- userOperation
+          .insertUserDatabase(user)
+          .mapError(ex => ExecutionError(s"Insert Operation Error : ${ex.getMessage}"))
         volskayaResult = VolskayaResult(
           user,
           VolskayaSuccessResponse(
             responseMessage = getSuccessUpdateMessage(fieldId = PasswordField)
           )
         )
-      } yield volskayaResult).mapError(_ => ExecutionError("Error to insert User"))
+      } yield volskayaResult
   }
 
   trait Service[R] {
@@ -209,17 +211,12 @@ object UserCollectionModule {
   }
 
   trait Live extends UserCollectionModule {
-    override val userCollectionModule: Service[Any] = new Service[Any] {
-      override def userCollection(
-        uri: String,
-        databaseName: String,
-        userCollectionName: String
-      ): ZIO[Any, Throwable, UserCollection] =
+    override val userCollectionModule: Service[Any] =
+      (uri: String, databaseName: String, userCollectionName: String) =>
         for {
           mongoCollection <- Mongo
             .setupMongoConfiguration[User](uri, databaseName, userCollectionName)
         } yield UserCollection(mongoCollection)
-    }
   }
 
   object factory extends Service[UserCollectionModule] {
