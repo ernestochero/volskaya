@@ -1,9 +1,5 @@
 package models
-
-import java.util.Spliterator.OfPrimitive
-
-import com.sun.org.apache.xalan.internal.xsltc.compiler.util.ErrorMsg
-
+import scala.language.higherKinds
 abstract class FieldId(val name: String) extends Serializable {
   override def toString: String = name
 }
@@ -63,10 +59,6 @@ object VolskayaMessages {
   def getMatchPatternNotFoundMessage: String = "Match Pattern Not Found"
   def getFailedSendVerificationCode: String  = "Failed to Sent Verification Code"
 
-  case class VolskayaIncorrectParameters(responseCode: String = "11",
-                                         responseMessage: String = "Incorrect Parameters")
-      extends VolskayaResponse
-
   case class VolskayaSuccessResponse(responseCode: String = "00", responseMessage: String)
       extends VolskayaResponse
 
@@ -79,14 +71,10 @@ object VolskayaMessages {
                                       approximateTime: Option[Double] = None,
                                       volskayaResponse: VolskayaResponse)
 
-  case class VolskayaGetUserResponse(userDomain: Option[UserDomain],
-                                     volskayaResponse: VolskayaResponse)
-
-  case class VolskayaLoginResponse(id: Option[String], volskayaResponse: VolskayaResponse)
-
-  case class VolskayaRegisterResponse(id: Option[String], volskayaResponse: VolskayaResponse)
-
-  case class VolskayaGetOrderResponse(orderDomain: Option[OrderDomain],
-                                      volskayaResponse: VolskayaResponse)
+  case class VolskayaResult[F[_], A](value: F[A], volskayaResponse: VolskayaResponse)
+  case class VolskayaPrice(price: Double,
+                           distance: Double,
+                           co2Saved: Double,
+                           approximateTime: Double)
 
 }

@@ -61,76 +61,43 @@ object UserManagementExceptions {
       with UserFacingError {
     override def getMessage: String = message
   }
-
+  case class VolskayaAPIException(message: String) extends Exception
 }
 
-case class Device(name: String, number: String, imei: String, token: Option[String] = None)
-
+case class Device(name: Option[String] = None,
+                  number: String,
+                  imei: Option[String] = None,
+                  token: Option[String] = None)
 case class PersonalInformation(firstName: String, lastName: String, dni: String)
-
+case class CompanyInformation(name: String, address: String, ruc: String)
+case class UserAuthenticate(verificationCode: Int, isAuthenticated: Boolean = false)
 case class FavoriteSite(coordinate: Coordinate, name: String, address: String)
-
-case class UserDomain(id: Option[String],
-                      device: Option[Device],
-                      personalInformation: Option[PersonalInformation],
-                      email: Option[String],
-                      password: Option[String],
-                      isAuthenticated: Option[Boolean],
-                      favoriteSites: Option[List[FavoriteSite]],
-                      confirmationCode: Option[String],
-                      role: Option[String]) {
-  def asResource =
-    User(id.fold(ObjectId.get()) { new ObjectId(_) },
-         device,
-         personalInformation,
-         email,
-         password,
-         isAuthenticated,
-         favoriteSites,
-         confirmationCode,
-         role)
-}
 
 case class User(_id: ObjectId = new ObjectId(),
                 device: Option[Device] = None,
                 personalInformation: Option[PersonalInformation] = None,
+                companyInformation: Option[CompanyInformation] = None,
+                userAuthenticate: Option[UserAuthenticate] = None,
                 email: Option[String] = None,
                 password: Option[String] = None,
-                isAuthenticated: Option[Boolean] = None,
                 favoriteSites: Option[List[FavoriteSite]] = None,
-                confirmationCode: Option[String] = None,
-                role: Option[String] = None) {
-  def asDomain =
-    UserDomain(Some(_id.toHexString),
-               device,
-               personalInformation,
-               email,
-               password,
-               isAuthenticated,
-               favoriteSites,
-               confirmationCode,
-               role)
-}
+                role: Option[Role] = None)
 
-sealed trait Role {
-  val roleName: String
-}
-
+// find a better way to implement that ... waiting for PR :https://github.com/mongodb/mongo-scala-driver/pull/69
+sealed trait Role
 object Role {
+  case object DeliveryPerson  extends Role
+  case object DeliveryCompany extends Role
+  case object Client          extends Role
+  case object Company         extends Role
 
-  def decodeRoleName(name: String) =
+  def decodeRoleName(name: String): Role =
     name match {
-      case "client"  => Client
-      case "cyclist" => Cyclist
-      case _         => throw new Exception("role name don't recognisable")
+      case "Client"          => Client
+      case "DeliveryCompany" => DeliveryCompany
+      case "DeliveryPerson"  => DeliveryPerson
+      case "Company"         => Company
+      case _                 => throw new Exception("role name don't recognisable")
     }
-
-  case object Client extends Role {
-    override val roleName: String = "client"
-  }
-
-  case object Cyclist extends Role {
-    override val roleName: String = "cyclist"
-  }
-
+  def encodeRoleName(role: Role): String = role.toString
 }

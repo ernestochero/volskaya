@@ -14,66 +14,20 @@ case class Order(
   distance: Option[Double] = None,
   price: Option[Double] = None,
   orderStates: List[OrderState] = List(),
-  payMethod: Option[String] = Some(Cash.payMethodName),
+  payDelivery: Option[PayDefinition] = None,
+  payProduct: Option[PayDefinition] = None,
   isPaid: Option[Boolean] = None,
   lastState: Option[OrderState] = None,
   products: List[Product] = List(),
   generalDescription: Option[String] = None,
+  approximateTimeToDeliver: Option[Int],
   created: Option[String] = Some(DateTime.now(DateTimeZone.UTC).toString),
-) {
-  def asDomain =
-    OrderDomain(
-      Some(_id.toHexString),
-      clientId,
-      cyclistId,
-      finalClient,
-      route,
-      distance,
-      price,
-      orderStates,
-      payMethod,
-      isPaid,
-      lastState,
-      products,
-      generalDescription,
-      created
-    )
-}
+)
 
-case class OrderDomain(
-  id: Option[String],
-  clientId: Option[String],
-  cyclistId: Option[String],
-  finalClient: Option[FinalClient],
-  route: Option[Route],
-  distance: Option[Double],
-  price: Option[Double],
-  orderStates: List[OrderState] = List(),
-  payMethod: Option[String],
-  isPaid: Option[Boolean],
-  lastState: Option[OrderState],
-  products: List[Product] = List(),
-  generalDescription: Option[String],
-  created: Option[String],
-) {
-  def asResource =
-    Order(
-      id.fold(ObjectId.get()) { new ObjectId(_) },
-      clientId,
-      cyclistId,
-      finalClient,
-      route,
-      distance,
-      price,
-      orderStates,
-      payMethod,
-      isPaid,
-      lastState,
-      products,
-      generalDescription,
-      created
-    )
-}
+case class PayDefinition(
+  payMethod: String,
+  amount: Double
+)
 
 case class FinalClient(
   name: String,
