@@ -55,8 +55,10 @@ object VolskayaServer extends CatsApp with GenericSchema[Console with Clock] {
               args.oldPassword,
               args.newPassword
           ),
-          args => service.insertUser(args.role)
-        )
+          args => service.insertUser(args.role),
+          args => service.insertCoordinate(args)
+        ),
+        Subscriptions(service.coordinateInsertedEvent)
       )
     )
     _ <- BlazeServerBuilder[VolskayaTask]
