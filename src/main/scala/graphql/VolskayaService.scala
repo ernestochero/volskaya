@@ -149,7 +149,24 @@ case class VolskayaService(userCollection: Ref[UserCollection],
     userCollection.get.flatMap(_.insertUser(user))
   }
 
-  def userAddedEvent: ZStream[Any, Nothing, String] = ZStream.unwrap {
+  def insertCoordinate(
+    coordinate: Coordinate
+  ): ZIO[Any, Nothing, String] =
+    // here insert this coordinate to kassandraDB
+    for {
+      res <- ZIO.succeed(coordinate)
+      _ <- subscribers.get.flatMap(
+        // add item for all subscribers
+        UIO.foreach(_)(
+          queue =>
+            queue
+              .offer(res.toString)
+              .onInterrupt(subscribers.update(_.filterNot(_ == queue)))
+        )
+      )
+    } yield "Success"
+
+  def coordinateInsertedEvent: ZStream[Any, Nothing, String] = ZStream.unwrap {
     for {
       queue <- Queue.unbounded[String]
       _     <- subscribers.update(queue :: _)
