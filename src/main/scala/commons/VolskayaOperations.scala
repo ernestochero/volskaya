@@ -11,12 +11,13 @@ object VolskayaOperations {
   def getPriceByDistance(distanceMeters: Int): Double = distanceMeters match {
     case v if v > 0 && v <= 1599     => 4.0
     case v if v >= 1600 && v <= 3099 => 5.0
-    case v if v >= 3100 && v <= 4099 => 6.0
-    case v if v >= 4100 && v <= 5099 => 7.0
-    case v if v >= 5100 && v <= 6099 => 8.0
-    case v if v >= 6100 && v <= 7099 => 9.0
-    case v if v >= 7100 && v <= 8099 => 10.0
-    case _                           => 12.0
+    case v if v >= 3100 && v <= 4099 => 7.0
+    case v if v >= 4100 && v <= 5099 => 8.0
+    case v if v >= 5100 && v <= 6099 => 10.0
+    case v if v >= 6100 && v <= 7099 => 11.0
+    case v if v >= 7100 && v <= 8099 => 13.0
+    case v if v >= 8100 && v <= 9099 => 14.0
+    case _                           => 15.0
   }
 
   def validateCoordinateIntoArea(coordinate: Coordinate): Boolean = inside(coordinate)

@@ -33,7 +33,7 @@ object VolskayaServer extends CatsApp with GenericSchema[Console with Clock] {
       configuration.mongoConf.database,
       configuration.mongoConf.userCollection
     )
-    _ <- LoggingModule.factory.warn(s"init the graphql application ${configuration.appName}")
+    _ <- LoggingModule.factory.info(s"init the graphql application ${configuration.appName}")
     googleMapsService <- GoogleMapsModule.factory.googleMapsService(
       GoogleMapsContext(
         apiKey = configuration.googleMapsConf.apiKey
