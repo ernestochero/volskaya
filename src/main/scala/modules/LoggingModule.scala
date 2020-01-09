@@ -1,5 +1,5 @@
 package modules
-import org.apache.log4j.Logger
+import org.log4s.Logger
 import zio.{ UIO, ZIO }
 import LoggingModule._
 
@@ -28,10 +28,10 @@ object LoggingModule {
       def warn(msg: String)(implicit logger: Logger): UIO[Unit] = UIO.effectTotal(logger.warn(msg))
 
       def warn(msg: String, exception: Throwable)(implicit logger: Logger): UIO[Unit] =
-        UIO.effectTotal(logger.warn(msg, exception))
+        UIO.effectTotal(logger.warn(exception)(msg))
 
       def error(msg: String, exception: Throwable)(implicit logger: Logger): UIO[Unit] =
-        UIO.effectTotal(logger.error(msg, exception))
+        UIO.effectTotal(logger.error(exception)(msg))
 
       /*def error(error: ErrorLog)(implicit logger: Logger): UIO[Unit] =
         UIO.effectTotal(logger.error(JemstepLogging.getErrorJson(error)))*/

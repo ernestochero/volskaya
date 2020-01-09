@@ -1,7 +1,5 @@
 package commons
-
-import org.apache.log4j.Logger
-
+import org.log4s.getLogger
 object Logger {
-  implicit final val logger: Logger = org.apache.log4j.Logger.getLogger("volskayaLogger")
+  implicit final val logger: org.log4s.Logger = getLogger("volskayaLogger")
 }

@@ -1,5 +1,4 @@
 package graphql
-import caliban.CalibanError
 import caliban.schema.{ ArgBuilder, GenericSchema, Schema }
 import caliban.GraphQL._
 import caliban.{ Http4sAdapter, RootResolver }
@@ -34,6 +33,7 @@ object VolskayaServer extends CatsApp with GenericSchema[Console with Clock] {
       configuration.mongoConf.userCollection
     )
     _ <- LoggingModule.factory.info(s"init the graphql application ${configuration.appName}")
+    _ = logger.info(s"this is a common graphql logger application ${configuration.appName}")
     googleMapsService <- GoogleMapsModule.factory.googleMapsService(
       GoogleMapsContext(
         apiKey = configuration.googleMapsConf.apiKey

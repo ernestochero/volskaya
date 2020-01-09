@@ -1,7 +1,6 @@
 package models
 
 import org.bson.types.ObjectId
-import sangria.execution.UserFacingError
 
 object OrderManagementMessages {
 
@@ -40,27 +39,7 @@ object UserManagementMessages {
 
 }
 
-trait UserStorageResponse
-case class UserSuccessResponse(userId: String) extends UserStorageResponse
-
 object UserManagementExceptions {
-  case class UserNotFoundException(message: String) extends Exception with UserFacingError {
-    override def getMessage: String = message
-  }
-
-  case class MatchPatternNotFoundException(message: String) extends Exception with UserFacingError {
-    override def getMessage: String = message
-  }
-
-  case class SendVerificationCodeException(message: String) extends Exception with UserFacingError {
-    override def getMessage: String = message
-  }
-
-  case class CalculatePriceRouteException(message: String, error: String = "01")
-      extends Exception
-      with UserFacingError {
-    override def getMessage: String = message
-  }
   case class VolskayaAPIException(message: String) extends Exception
 }
 
@@ -83,7 +62,6 @@ case class User(_id: ObjectId = new ObjectId(),
                 favoriteSites: Option[List[FavoriteSite]] = None,
                 role: Option[Role] = None)
 
-// find a better way to implement that ... waiting for PR :https://github.com/mongodb/mongo-scala-driver/pull/69
 sealed trait Role
 object Role {
   case object DeliveryPerson  extends Role

@@ -45,10 +45,6 @@ val pureConfigDependencies = Seq(
 
 libraryDependencies ++=
   Seq(
-  "org.sangria-graphql" %% "sangria" % "1.4.2",
-  "org.sangria-graphql" %% "sangria-slowlog" % "0.1.8",
-  "org.sangria-graphql" %% "sangria-circe" % "1.2.1",
-  "org.sangria-graphql" %% "sangria-play-json" % "1.0.5",
   "com.typesafe.akka" %% "akka-http"   % akkaHttpVersion,
   "com.typesafe.akka" %% "akka-actor"  % akkaVersion,
   "com.typesafe.akka" %% "akka-stream" % akkaVersion,
@@ -56,7 +52,9 @@ libraryDependencies ++=
   "de.heikoseeberger" %% "akka-http-circe" % "1.21.0",
   "joda-time" % "joda-time" % "2.10.1",
   "org.joda" % "joda-convert" % "2.2.0",
-  "log4j" % "log4j" % "1.2.17",
+  "org.log4s" %% "log4s" % "1.8.2",
+  "ch.qos.logback" % "logback-classic" % "1.2.3",
+  "com.typesafe.play" %% "play-json" % "2.8.1"
 ) ++ mongoDriverDependencies ++ http4sDependencies ++ zioDependencies ++ circeDependencies ++ calibanDependencies ++ pureConfigDependencies
 
 Revolver.settings
