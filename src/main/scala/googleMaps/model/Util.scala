@@ -1,4 +1,4 @@
-package googleMapsService.model
+package googleMaps.model
 
 object Units extends Enumeration {
   type Units = Value
@@ -12,11 +12,9 @@ object TravelMode extends Enumeration {
 
 object Language extends Enumeration {
   type Language = Value
-  val ar, bg, bn, ca, cs, da, de, el, en, `en-AU`, `en-GB`, es,
-  eu, fa, fi, fil, fr, gl, gu, hi, hr, hu, id, it, iw, ja,
-  kn, ko, lt, lv, ml, mr, nl, no, pl, pt, ptBR, ptPT, ro,
-  ru, sk, sl, sr, sv, ta, te, th, tl, tr, uk, vi, `zh-CN`,
-  `zh-TW` = Value
+  val ar, bg, bn, ca, cs, da, de, el, en, `en-AU`, `en-GB`, es, eu, fa, fi, fil, fr, gl, gu, hi, hr,
+  hu, id, it, iw, ja, kn, ko, lt, lv, ml, mr, nl, no, pl, pt, ptBR, ptPT, ro, ru, sk, sl, sr, sv,
+  ta, te, th, tl, tr, uk, vi, `zh-CN`, `zh-TW` = Value
 }
 
 object Avoid extends Enumeration {
@@ -38,5 +36,3 @@ object TransitRoutingPreference extends Enumeration {
   type TransitRoutingPreference = Value
   val less_walking, fewer_transfers = Value
 }
-
-

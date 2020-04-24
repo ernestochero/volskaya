@@ -10,10 +10,8 @@ scalacOptions ++= Seq("-deprecation", "-feature")
 scalacOptions ++= Seq("-Ypartial-unification")
 val akkaVersion = "2.5.19"
 val akkaHttpVersion = "10.1.8"
-val calibanVersion = "0.3.0"
+val calibanVersion = "0.7.4"
 val circeVersion = "0.12.2"
-val zioVersion = "2.0.0.0-RC6"
-val http4sVersion = "0.20.6"
 val mongoDriverVersion = "2.7.0"
 val pureConfigVersion = "0.12.1"
 
@@ -24,17 +22,10 @@ val calibanDependencies = Seq(
 val circeDependencies = Seq(
   "io.circe"      %% "circe-parser"        %  circeVersion,
   "io.circe"      %% "circe-derivation"    %  "0.12.0-M7",
-  "io.circe" %%	"circe-core" % "0.9.3",
-  "io.circe" %% "circe-optics" % "0.9.3"
+  "io.circe" %%	"circe-core" % "0.13.0",
+  "io.circe" %% "circe-optics" % "0.13.0"
 )
-val zioDependencies = Seq(
-  "dev.zio"       %% "zio-interop-cats"    % zioVersion
-)
-val http4sDependencies = Seq(
-  "org.http4s"    %% "http4s-dsl"          % http4sVersion,
-  "org.http4s"    %% "http4s-circe"        % http4sVersion,
-  "org.http4s"    %% "http4s-blaze-server" % http4sVersion,
-)
+
 val mongoDriverDependencies = Seq(
   "org.mongodb.scala" %% "mongo-scala-driver" % mongoDriverVersion
 )
@@ -42,20 +33,16 @@ val pureConfigDependencies = Seq(
   "com.github.pureconfig" %% "pureconfig" % pureConfigVersion
 )
 
-
 libraryDependencies ++=
   Seq(
   "com.typesafe.akka" %% "akka-http"   % akkaHttpVersion,
   "com.typesafe.akka" %% "akka-actor"  % akkaVersion,
-  "com.typesafe.akka" %% "akka-stream" % akkaVersion,
   "com.typesafe.akka" %% "akka-http-spray-json" % akkaHttpVersion,
   "de.heikoseeberger" %% "akka-http-circe" % "1.21.0",
-  "joda-time" % "joda-time" % "2.10.1",
-  "org.joda" % "joda-convert" % "2.2.0",
   "org.log4s" %% "log4s" % "1.8.2",
   "ch.qos.logback" % "logback-classic" % "1.2.3",
   "com.typesafe.play" %% "play-json" % "2.8.1"
-) ++ mongoDriverDependencies ++ http4sDependencies ++ zioDependencies ++ circeDependencies ++ calibanDependencies ++ pureConfigDependencies
+) ++ mongoDriverDependencies ++ circeDependencies ++ calibanDependencies ++ pureConfigDependencies
 
 Revolver.settings
 enablePlugins(JavaAppPackaging)

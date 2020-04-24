@@ -2,10 +2,11 @@ package commons
 
 import models.Coordinate
 import PolygonUtils._
-import caliban.CalibanError.ExecutionError
-import googleMapsService.model.DistanceMatrix
+import commons.VolskayaOperations.isDistanceZero
+import googleMaps.model.DistanceMatrix
 import models.UserManagementExceptions.VolskayaAPIException
-import zio.ZIO
+import models.VolskayaMessages._
+import zio.{ IO, Task, ZIO }
 
 object VolskayaOperations {
   def getPriceByDistance(distanceMeters: Int): Double = distanceMeters match {
@@ -49,4 +50,28 @@ object VolskayaOperations {
       )
       .mapError(_ => VolskayaAPIException("distanceMatrix are not defined"))
 
+  def buildGetPriceResponse(
+    initialDistance: Int,
+    secondDistance: Int
+  ): IO[VolskayaAPIException, VolskayaPrice] =
+    for {
+      _ <- ZIO.when(isDistanceZero(secondDistance))(
+        ZIO.fail(VolskayaAPIException("Distance can't be zero"))
+      )
+      _ <- ZIO.when(isDistanceOverLimit(secondDistance))(
+        ZIO.fail(VolskayaAPIException("Route exceeds the limit of 10 kilometers"))
+      )
+      distanceInKilometers   = calculateDistanceInKilometers(secondDistance)
+      approximateTime        = calculateApproximateTime(secondDistance)
+      co2Saved               = calculateCO2Saved(secondDistance)
+      approximateInitialTime = calculateApproximateTime(initialDistance)
+      approximateFinalTime   = approximateTime + approximateInitialTime
+      price                  = getPriceByDistance(secondDistance)
+    } yield
+      VolskayaPrice(
+        price,
+        distanceInKilometers,
+        co2Saved,
+        approximateFinalTime,
+      )
 }
