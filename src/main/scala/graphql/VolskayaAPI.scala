@@ -18,19 +18,8 @@ object VolskayaAPI extends GenericSchema[UserCollectionServiceType with GoogleMa
     graphQL(
       RootResolver(
         Queries(
-          args => UserCollectionService.getUser(args.id),
-          args =>
-            UserCollectionService.getAllUsers(args.limit.getOrElse(20), args.offset.getOrElse(0)),
           UserCollectionService.wakeUpHeroku,
           args => GoogleMapsService.calculatePriceRoute(args.coordinateStart, args.coordinateFinish)
-        ),
-        Mutations(
-          args =>
-            UserCollectionService.updatePassword(
-              args.id,
-              args.oldPassword,
-              args.newPassword
-          )
         )
       )
     )
