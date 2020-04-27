@@ -1,4 +1,4 @@
-package googleMapsService
+package googleMaps
 
 // https://developers.google.com/maps/documentation/distance-matrix/start
 // https://developers.google.com/maps/documentation/distance-matrix/intro#DistanceMatrixRequests
@@ -38,8 +38,9 @@ object DistanceMatrixApi extends JsonSupport {
     avoid: Option[Avoid] = None,
     trafficModel: Option[TrafficModel] = None,
     transitMode: Option[List[TransitMode]] = None,
-    transitRoutingPreference: Option[TransitRoutingPreference] = None
-  )(implicit context: GoogleMapsContext): Future[DistanceMatrix] = {
+    transitRoutingPreference: Option[TransitRoutingPreference] = None,
+    context: GoogleMapsContext
+  ): Future[DistanceMatrix] = {
 
     val request = DistanceMatrixApiRequest(context)
 

@@ -1,4 +1,4 @@
-package googleMapsService
+package googleMaps
 
 trait Context
 case class GoogleMapsContext(apiKey: String)           extends Context

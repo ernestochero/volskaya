@@ -4,50 +4,31 @@ import models.{ FavoriteSite, PersonalInformation, User }
 import org.mongodb.scala.MongoCollection
 import org.mongodb.scala.bson.{ Document, ObjectId }
 import org.mongodb.scala.result.UpdateResult
-import zio.RIO
-import zio.console.Console
+import zio.{ Task, UIO, ZIO }
 import commons.Transformers._
+
 import scala.concurrent.{ ExecutionContext, Future }
-
-sealed trait UserCollectionOperation extends Operation {
-  def getAllUsersFromDatabase(limit: Int, offset: Int): RIO[Console, List[User]]
-  def wakeUpHeroku: RIO[Console, String] = RIO.succeed("I'm awake")
-  def getUserFromDatabase(id: String): RIO[Console, Option[User]]
-  def updatePasswordDatabase(id: String,
-                             oldPassword: String,
-                             newPassword: String): RIO[Console, UpdateResult]
-  def updateEmailDatabase(id: String, email: String): RIO[Console, UpdateResult]
-  def updatePersonalInformationDatabase(
-    id: String,
-    personalInformation: PersonalInformation
-  ): RIO[Console, UpdateResult]
-
-  def updateFavoriteSiteDatabase(id: String, favoriteSite: FavoriteSite): RIO[Console, UpdateResult]
-  def insertUserDatabase(user: User): RIO[Console, Option[User]]
-
-  /*  def verifyLoginAgainstDatabase(email: String, password: String)
-  def storeVerificationCodeDatabase(id: String, verificationCode: String)
-  def checkVerificationCodeDatabase(id: String, verificationCode: String)*/
-}
-
-final case class UserOperation(userMongoCollection: MongoCollection[User])
-    extends UserCollectionOperation {
+object UserOperation {
   implicit val ec: ExecutionContext = ExecutionContext.global
-  override def getAllUsersFromDatabase(limit: Int, offset: Int): RIO[Console, List[User]] =
-    userMongoCollection.find().skip(offset).limit(limit).toFuture().map(_.toList).toRIO
-  override def getUserFromDatabase(id: String): RIO[Console, Option[User]] = {
+  def getUserFromDatabase(userMongoCollection: MongoCollection[User],
+                          id: String): Task[Option[User]] = {
     val filter = Document("_id" -> new ObjectId(id))
     userMongoCollection
       .find(filter)
       .toFuture()
       .recoverWith { case e => Future.failed(e) }
       .map(_.headOption)
-      .toRIO
+      .toTask
   }
+  def getAllUsersFromDatabase(limit: Int,
+                              offset: Int,
+                              userMongoCollection: MongoCollection[User]): Task[List[User]] =
+    userMongoCollection.find().skip(offset).limit(limit).toFuture().map(_.toList).toTask
 
-  override def updatePasswordDatabase(id: String,
-                                      oldPassword: String,
-                                      newPassword: String): RIO[Console, UpdateResult] = {
+  def updatePasswordDatabase(id: String,
+                             oldPassword: String,
+                             newPassword: String,
+                             userMongoCollection: MongoCollection[User]): Task[UpdateResult] = {
     val filter = Document("_id"  -> new ObjectId(id), "password" -> oldPassword)
     val update = Document("$set" -> Document("password" -> newPassword))
     userMongoCollection
@@ -56,39 +37,20 @@ final case class UserOperation(userMongoCollection: MongoCollection[User])
       .recoverWith { case e => Future.failed(e) }
       .toRIO
   }
-
-  override def updateEmailDatabase(id: String, email: String): zio.RIO[Console, UpdateResult] = {
-    val filter = Document("_id"  -> new ObjectId(id))
-    val update = Document("$set" -> Document("email" -> email))
+  def insertUserDatabase(user: User,
+                         userMongoCollection: MongoCollection[User]): Task[Option[User]] =
     userMongoCollection
-      .updateOne(filter, update)
+      .insertOne(user)
       .toFuture()
-      .recoverWith { case e => Future.failed(e) }
-      .toRIO
-  }
+      .recoverWith { case ex => Future.failed(ex) }
+      .map(_ => Some(user))
+      .toTask
 
-  override def updatePersonalInformationDatabase(
+  def updateFavoriteSiteDatabase(
     id: String,
-    personalInformation: PersonalInformation
-  ): zio.RIO[Console, UpdateResult] = {
-    val filter = Document("_id" -> new ObjectId(id))
-    val fields = Document(
-      "firstName" -> personalInformation.firstName,
-      "lastName"  -> personalInformation.lastName,
-      "dni"       -> personalInformation.dni
-    )
-    val update = Document("$set" -> Document("personalInformation" -> fields))
-    userMongoCollection
-      .updateOne(filter, update)
-      .toFuture()
-      .recoverWith { case e => Future.failed(e) }
-      .toRIO
-  }
-
-  override def updateFavoriteSiteDatabase(
-    id: String,
-    favoriteSite: FavoriteSite
-  ): zio.RIO[Console, UpdateResult] = {
+    favoriteSite: FavoriteSite,
+    userMongoCollection: MongoCollection[User]
+  ): Task[UpdateResult] = {
     val filter = Document("_id" -> new ObjectId(id))
     val favoriteSiteField = Document(
       "coordinate" -> Document("latitude" -> favoriteSite.coordinate.latitude,
@@ -101,14 +63,37 @@ final case class UserOperation(userMongoCollection: MongoCollection[User])
       .updateOne(filter, update)
       .toFuture()
       .recoverWith { case e => Future.failed(e) }
-      .toRIO
+      .toTask
   }
 
-  override def insertUserDatabase(user: User): RIO[Console, Option[User]] =
+  def updatePersonalInformationDatabase(
+    id: String,
+    personalInformation: PersonalInformation,
+    userMongoCollection: MongoCollection[User]
+  ): Task[UpdateResult] = {
+    val filter = Document("_id" -> new ObjectId(id))
+    val fields = Document(
+      "firstName" -> personalInformation.firstName,
+      "lastName"  -> personalInformation.lastName,
+      "dni"       -> personalInformation.dni
+    )
+    val update = Document("$set" -> Document("personalInformation" -> fields))
     userMongoCollection
-      .insertOne(user)
+      .updateOne(filter, update)
       .toFuture()
-      .recoverWith { case ex => Future.failed(ex) }
-      .map(_ => Some(user))
-      .toRIO
+      .recoverWith { case e => Future.failed(e) }
+      .toTask
+  }
+
+  def updateEmailDatabase(id: String,
+                          email: String,
+                          userMongoCollection: MongoCollection[User]): Task[UpdateResult] = {
+    val filter = Document("_id"  -> new ObjectId(id))
+    val update = Document("$set" -> Document("email" -> email))
+    userMongoCollection
+      .updateOne(filter, update)
+      .toFuture()
+      .recoverWith { case e => Future.failed(e) }
+      .toTask
+  }
 }

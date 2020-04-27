@@ -1,86 +1,89 @@
 package graphql
-import caliban.schema.{ ArgBuilder, GenericSchema, Schema }
-import caliban.GraphQL._
-import caliban.{ Http4sAdapter, RootResolver }
-import googleMapsService.GoogleMapsContext
-import modules.{ ConfigurationModule, GoogleMapsModule, LoggingModule, UserCollectionModule }
-import org.mongodb.scala.bson.ObjectId
-import zio.{ RIO, ZIO }
+import caliban.schema.GenericSchema
+import caliban.Http4sAdapter
+import cats.effect.Blocker
+import googleMaps.GoogleMapsContext
+import zio.{ RIO, Task, ZIO, ZLayer }
 import zio.clock.Clock
 import zio.console.{ Console, putStrLn }
 import zio.interop.catz._
 import org.http4s.implicits._
-import org.http4s.server.Router
+import org.http4s.server.{ Router, ServiceErrorHandler }
 import org.http4s.server.blaze.BlazeServerBuilder
-import org.http4s.server.middleware.CORS
 import zio.blocking.Blocking
-import zio.random.Random
-import zio.system.System
 import commons.Logger._
-import scala.language.higherKinds
-object VolskayaServer extends CatsApp with GenericSchema[Console with Clock] {
-  type VolskayaTask[A] = RIO[Console with Clock, A]
-  implicit val objectIdSchema     = Schema.stringSchema.contramap[ObjectId](_.toHexString)
-  implicit val objectIdArgBuilder = ArgBuilder.string.map(new ObjectId(_))
-  val logic
-    : ZIO[zio.ZEnv with UserCollectionModule with ConfigurationModule with GoogleMapsModule with LoggingModule,
-          Nothing,
-          Int] = (for {
-    configuration <- ConfigurationModule.factory.configuration
-    userCollection <- UserCollectionModule.factory.userCollection(
-      configuration.mongoConf.uri,
-      configuration.mongoConf.database,
-      configuration.mongoConf.userCollection
-    )
-    _ <- LoggingModule.factory.info(s"init the graphql application ${configuration.appName}")
-    _ = logger.info(s"this is a common graphql logger application ${configuration.appName}")
-    googleMapsService <- GoogleMapsModule.factory.googleMapsService(
-      GoogleMapsContext(
-        apiKey = configuration.googleMapsConf.apiKey
-      )
-    )
-    service <- VolskayaService.make(userCollection, googleMapsService)
-    interpreter = graphQL(
-      RootResolver(
-        Queries(
-          args => service.getUser(args.id),
-          args => service.getAllUsers(args.limit.getOrElse(20), args.offset.getOrElse(0)),
-          service.wakeUpVolskaya,
-          args => service.calculatePriceRoute(args.coordinateStart, args.coordinateFinish)
-        ),
-        Mutations(
-          args =>
-            service.updatePassword(
-              args.id,
-              args.oldPassword,
-              args.newPassword
-          ),
-          args => service.insertUser(args.role)
-        )
-      )
-    )
-    _ <- BlazeServerBuilder[VolskayaTask]
-      .bindHttp(configuration.httpConf.port, configuration.httpConf.host)
-      .withHttpApp(
-        Router(
-          "/api/graphql" -> CORS(Http4sAdapter.makeRestService(interpreter)),
-          "/ws/graphql"  -> CORS(Http4sAdapter.makeWebSocketService(interpreter))
-        ).orNotFound
-      )
-      .resource
-      .toManaged
-      .useForever
-  } yield 0).catchAll(err => putStrLn(err.toString).as(1))
 
-  private val program = logic.provideSome[zio.ZEnv] { env =>
-    new System with Clock with Console with Blocking with Random with ConfigurationModule.Live
-    with UserCollectionModule.Live with GoogleMapsModule.Live with LoggingModule.Live {
-      override val system: System.Service[Any]     = env.system
-      override val clock: Clock.Service[Any]       = env.clock
-      override val console: Console.Service[Any]   = env.console
-      override val blocking: Blocking.Service[Any] = env.blocking
-      override val random: Random.Service[Any]     = env.random
-    }
+import scala.language.higherKinds
+import configuration.configurationService._
+import logging.loggingService._
+import googleMaps.googleMapsService._
+import models.AuthServiceException._
+import models.User
+import mongodb.Mongo
+import org.http4s.util.CaseInsensitiveString
+import zio.interop.catz.implicits._
+import userCollection.UserCollectionService
+import userCollection.UserCollectionService.UserCollectionServiceType
+import commons.JwtUtils._
+import org.http4s.dsl.Http4sDsl
+object VolskayaServer extends CatsApp with GenericSchema[Console with Clock] {
+  type VolskayaTask[A] =
+    RIO[Console with Clock with UserCollectionServiceType with GoogleMapsServiceType, A]
+  object dsl extends Http4sDsl[Task]
+  import dsl._
+  val errorHandler: ServiceErrorHandler[Task] = _ => {
+    case MissingToken() => Forbidden()
+    case InvalidToken() => BadRequest()
   }
   override def run(args: List[String]): ZIO[zio.ZEnv, Nothing, Int] = program
+  val logic: ZIO[zio.ZEnv with ConfigurationServiceType with LoggingServiceType, Nothing, Int] =
+    (for {
+      conf <- ConfigurationService.buildConfiguration
+      userCollection <- Mongo.setupMongoConfiguration[User](
+        conf.mongoConf.uri,
+        conf.mongoConf.database,
+        conf.mongoConf.userCollection
+      )
+      _ <- LoggingService.info(s"init the graphql application ${conf.appName}")
+      _ = logger.info(s"this is a common graphql logger application ${conf.appName}")
+      googleMapsLayer = GoogleMapsService.make(
+        GoogleMapsContext(apiKey = conf.googleMapsConf.apiKey)
+      )
+      userCollectionLayer = UserCollectionService.make(userCollection)
+      _ <- for {
+        _           <- ZIO.access[Blocking](_.get.blockingExecutor.asEC).map(Blocker.liftExecutionContext)
+        interpreter <- VolskayaAPI.api.interpreter
+        layers = googleMapsLayer ++ userCollectionLayer
+        routeApi = Http4sAdapter.provideLayerFromRequest(
+          Http4sAdapter.makeHttpService(interpreter),
+          _.headers.get(CaseInsensitiveString("jwt-token")) match {
+            case Some(extractedToken) =>
+              decodeJwtToken(extractedToken.value, conf.jwtConf.secretKey).fold(
+                _ => ZLayer.fail(InvalidToken()),
+                _ => layers
+              )
+            case None => ZLayer.fail(MissingToken())
+          }
+        )
+        routeWs = Http4sAdapter.provideLayerFromRequest(
+          Http4sAdapter.makeWebSocketService(interpreter),
+          _ => layers
+        )
+        _ <- BlazeServerBuilder[Task]
+          .bindHttp(conf.httpConf.port, conf.httpConf.host)
+          .withServiceErrorHandler(errorHandler)
+          .withHttpApp(
+            Router[Task](
+              "/api/graphql" -> routeApi,
+              "/ws/graphql"  -> routeWs,
+            ).orNotFound
+          )
+          .resource
+          .toManaged
+          .useForever
+      } yield 0
+    } yield 0).catchAll(err => putStrLn(err.toString).as(1))
+
+  val liveEnvironment = zio.ZEnv.live ++ ConfigurationService.live ++ LoggingService.live
+  private val program = logic.provideLayer(liveEnvironment)
 }

@@ -1,4 +1,4 @@
-package googlefcmservice
+package googlefcm
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.headers.{
@@ -15,8 +15,8 @@ import akka.http.scaladsl.model.{
   HttpMethods,
   RequestEntity
 }
-import googleMapsService.{ GoogleFCMContext, Request }
-import googlefcmservice.model._
+import googleMaps.{ GoogleFCMContext, Request }
+import googlefcm.model._
 import play.api.libs.json._
 import spray.json.DefaultJsonProtocol
 
@@ -30,9 +30,9 @@ trait JsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
 
 object SendNotificationApi extends JsonSupport {
 
-  def sendNotificationCode(code: String, phoneNumber: String)(
-    implicit contextFCM: GoogleFCMContext
-  ): Future[SendNotification] = {
+  def sendNotificationCode(code: String,
+                           phoneNumber: String,
+                           contextFCM: GoogleFCMContext): Future[SendNotification] = {
     val request = SendNotificationApiRequest(contextFCM, code, phoneNumber)
     request.makeRequest(Map.empty[String, String])
   }
