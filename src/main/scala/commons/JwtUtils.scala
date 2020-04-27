@@ -9,11 +9,4 @@ object JwtUtils {
 
   def decodeJwtToken(token: String, secretKey: String): Try[String] =
     Jwt.decodeRaw(token, secretKey, Seq(algorithm))
-
-  /*  def main(args: Array[String]): Unit = {
-    val token = createJwtToken("volskaya-key")
-    println(token)
-    println(decodeJwtToken(token, "volskaya-key"))
-  }*/
-
 }
