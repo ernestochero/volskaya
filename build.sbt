@@ -10,14 +10,14 @@ scalacOptions ++= Seq("-deprecation", "-feature")
 scalacOptions ++= Seq("-Ypartial-unification")
 val akkaVersion = "2.5.19"
 val akkaHttpVersion = "10.1.8"
-val calibanVersion = "0.7.4"
+val calibanVersion = "0.7.6"
 val circeVersion = "0.12.2"
 val mongoDriverVersion = "2.7.0"
 val pureConfigVersion = "0.12.1"
 
 val calibanDependencies = Seq(
   "com.github.ghostdogpr" %% "caliban" % calibanVersion,
-  "com.github.ghostdogpr" %% "caliban-http4s" %  calibanVersion
+  "com.github.ghostdogpr" %% "caliban-http4s" %  calibanVersion,
 )
 val circeDependencies = Seq(
   "io.circe"      %% "circe-parser"        %  circeVersion,
@@ -41,7 +41,8 @@ libraryDependencies ++=
   "de.heikoseeberger" %% "akka-http-circe" % "1.21.0",
   "org.log4s" %% "log4s" % "1.8.2",
   "ch.qos.logback" % "logback-classic" % "1.2.3",
-  "com.typesafe.play" %% "play-json" % "2.8.1"
+  "com.typesafe.play" %% "play-json" % "2.8.1",
+  "com.pauldijou" %% "jwt-core" % "4.2.0"
 ) ++ mongoDriverDependencies ++ circeDependencies ++ calibanDependencies ++ pureConfigDependencies
 
 Revolver.settings

@@ -7,10 +7,12 @@ package object configurationService {
   type ConfigurationServiceType = Has[ConfigurationService.Service]
   object ConfigurationService {
     case class ConfigurationError(message: String) extends RuntimeException(message)
+    case class JwtConf(secretKey: String)
     case class HttpConf(host: String, port: Int)
     case class MongoConf(database: String, uri: String, userCollection: String)
     case class GoogleMapsConf(apiKey: String)
     case class Configuration(appName: String,
+                             jwtConf: JwtConf,
                              httpConf: HttpConf,
                              mongoConf: MongoConf,
                              googleMapsConf: GoogleMapsConf)
